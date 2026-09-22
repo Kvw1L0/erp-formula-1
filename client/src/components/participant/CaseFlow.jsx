@@ -2,7 +2,32 @@
 
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, ChevronDown, ChevronUp, Send, AlertCircle, Wrench, ShieldCheck, HelpCircle, WifiOff, Radio, Users } from 'lucide-react';
-import { sounds } from '../../lib/soundEffects';
+import { sounds, triggerHaptic } from '../../lib/soundEffects';
+
+// Algoritmo de barajado pseudo-aleatorio determinista por escudería (Anti-Copia)
+function seededRng(seedStr) {
+  let h = 1779033703 ^ seedStr.length;
+  for (let i = 0; i < seedStr.length; i++) {
+    h = Math.imul(h ^ seedStr.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function() {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return ((h ^= h >>> 16) >>> 0) / 4294967296;
+  };
+}
+
+function getShuffledOptionsForTeam(options, teamId, stepId) {
+  const list = Array.isArray(options) ? [...options] : Object.values(options || {});
+  if (list.length <= 1) return list;
+  const rng = seededRng(`${teamId}_${stepId}`);
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
 
 export default function CaseFlow({ currentCase, onSubmitAnswers, isSubmitting, teamId = 1 }) {
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -75,11 +100,7 @@ export default function CaseFlow({ currentCase, onSubmitAnswers, isSubmitting, t
 
   const handleSelectOption = (stepId, optionId, stepNumber) => {
     sounds.playSelect();
-
-    // Feedback háptico en móvil/tablet
-    if (typeof window !== 'undefined' && window.navigator?.vibrate) {
-      window.navigator.vibrate(30);
-    }
+    triggerHaptic([30]);
 
     setValidationError('');
     const updated = {
@@ -108,11 +129,7 @@ export default function CaseFlow({ currentCase, onSubmitAnswers, isSubmitting, t
       return;
     }
 
-    // Feedback háptico de aceleración / salida de Pits
-    if (typeof window !== 'undefined' && window.navigator?.vibrate) {
-      window.navigator.vibrate([70, 40, 120]);
-    }
-
+    triggerHaptic([70, 40, 120]);
     sounds.playPitStopConfirm();
 
     // Limpiar borrador local
@@ -251,12 +268,11 @@ export default function CaseFlow({ currentCase, onSubmitAnswers, isSubmitting, t
                     </div>
                   )}
 
-                  {/* 3 Opciones de Acción */}
+                  {/* Opciones de Acción (Permutadas determinísticamente por Escudería para evitar copias) */}
                   <div className="space-y-2.5">
-                    {(Array.isArray(step.options) ? step.options : Object.values(step.options || {})).map((option, optIdx) => {
+                    {getShuffledOptionsForTeam(step.options, teamId, step.id).map((option, optIdx) => {
                       const isSelected = selectedOptionId === option.id;
-                      const optLetters = ['A', 'B', 'C'];
-                      const letter = optLetters[optIdx] || `${optIdx + 1}`;
+                      const letter = String.fromCharCode(65 + optIdx);
 
                       return (
                         <button

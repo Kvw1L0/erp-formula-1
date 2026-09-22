@@ -87,7 +87,7 @@ export default function CinematicVideoModal({
 
   const [currentVideoSrc, setCurrentVideoSrc] = useState(initialSource);
 
-  // Actualizar cuando cambien props
+  // Actualizar cuando cambien props y asegurar reproducción con sonido
   useEffect(() => {
     setCurrentVideoSrc(
       isStart
@@ -97,6 +97,26 @@ export default function CinematicVideoModal({
     setVideoError(false);
     setSecondsLeft(defaultDuration);
   }, [isStart, videoUrl, sectorKey, defaultDuration, sectorPadded]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.volume = 1.0;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setIsMuted(false);
+        }).catch(() => {
+          // Si el navegador bloquea audio sin interacción previa, reproducir silenciado y habilitar botón de un-mute
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
+            setIsMuted(true);
+          }
+        });
+      }
+    }
+  }, [currentVideoSrc]);
 
   // Manejo de fallbacks escalonados en caso de error de carga
   const handleVideoError = () => {
@@ -172,19 +192,37 @@ export default function CinematicVideoModal({
       {/* Video de Fondo o Fallback Cinemático */}
       <div className="relative w-full h-full flex items-center justify-center">
         {!videoError ? (
-          <video
-            ref={videoRef}
-            key={currentVideoSrc}
-            src={currentVideoSrc}
-            autoPlay
-            playsInline
-            muted={isMuted}
-            onError={handleVideoError}
-            onEnded={safeFinish}
-            className="w-full h-full object-cover opacity-90"
-          >
-            <source src={currentVideoSrc} type="video/mp4" />
-          </video>
+          <>
+            <video
+              ref={videoRef}
+              key={currentVideoSrc}
+              src={currentVideoSrc}
+              autoPlay
+              playsInline
+              muted={isMuted}
+              onError={handleVideoError}
+              onEnded={safeFinish}
+              className="w-full h-full object-cover opacity-90"
+            >
+              <source src={currentVideoSrc} type="video/mp4" />
+            </video>
+            {isMuted && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (videoRef.current) {
+                    videoRef.current.muted = false;
+                    videoRef.current.volume = 1.0;
+                    setIsMuted(false);
+                  }
+                }}
+                className="absolute top-6 left-6 z-30 px-4 py-2 rounded-xl bg-red-600/90 hover:bg-red-500 text-white font-mono font-bold text-xs uppercase flex items-center gap-2 shadow-2xl animate-pulse cursor-pointer border border-white/20"
+              >
+                <VolumeX className="w-4 h-4" />
+                <span>🔊 ACTIVAR AUDIO DEL VIDEO</span>
+              </button>
+            )}
+          </>
         ) : (
           /* Fallback visual cinemático con Canvas/CSS F1 */
           <div className="w-full h-full bg-gradient-to-b from-slate-950 via-carbon to-black flex flex-col items-center justify-center relative overflow-hidden">

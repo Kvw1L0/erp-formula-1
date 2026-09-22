@@ -4,6 +4,14 @@ import { SocketProvider } from '../context/SocketContext';
 export const metadata = {
   title: 'ERP Formula 1 | NetSuite Gamification & Live Telemetry',
   description: 'Aplicación web interactiva en tiempo real para eventos corporativos y capacitación ERP con temática de Fórmula 1 y Cultura Pits.',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'F1 Pits ERP'
+  },
+  formatDetection: {
+    telephone: false
+  }
 };
 
 export const viewport = {
@@ -11,6 +19,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
   themeColor: '#0B0D13',
 };
 

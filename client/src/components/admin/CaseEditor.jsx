@@ -99,6 +99,31 @@ export default function CaseEditor({ cases, onSaveCase, onDeleteCase, onCancel }
     setFormData(prev => ({ ...prev, steps: updated }));
   };
 
+  const handleAddOption = (stepIdx) => {
+    const updated = [...formData.steps];
+    const currentOpts = updated[stepIdx].options || [];
+    const nextChar = String.fromCharCode(65 + currentOpts.length);
+    const newOpt = {
+      id: `opt-${Date.now()}-${currentOpts.length + 1}`,
+      text: `Nueva Opción ${nextChar}`,
+      points: 10,
+      feedback: 'Fundamento pedagógico...'
+    };
+    updated[stepIdx].options = [...currentOpts, newOpt];
+    setFormData(prev => ({ ...prev, steps: updated }));
+  };
+
+  const handleRemoveOption = (stepIdx, optIdx) => {
+    const updated = [...formData.steps];
+    const currentOpts = updated[stepIdx].options || [];
+    if (currentOpts.length <= 2) {
+      alert('Cada pregunta debe tener al menos 2 opciones de respuesta.');
+      return;
+    }
+    updated[stepIdx].options = currentOpts.filter((_, idx) => idx !== optIdx);
+    setFormData(prev => ({ ...prev, steps: updated }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.title || !formData.steps || formData.steps.length === 0) {
@@ -361,36 +386,73 @@ export default function CaseEditor({ cases, onSaveCase, onDeleteCase, onCancel }
                   className="w-full bg-f1-card border border-f1-border rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none"
                 />
 
-                {/* 3 Opciones con asignación de puntos */}
-                <div className="space-y-2 pt-2">
-                  <label className="block text-[11px] font-mono text-slate-400 uppercase">
-                    3 OPCIONES Y ASIGNACIÓN DE PUNTOS:
-                  </label>
-                  {step.options?.map((opt, optIdx) => (
-                    <div key={opt.id || optIdx} className="grid grid-cols-12 gap-2 items-center">
-                      <span className="col-span-1 text-center font-mono text-xs font-bold text-slate-400">
-                        {['A', 'B', 'C'][optIdx] || optIdx + 1}
-                      </span>
-                      <div className="col-span-8">
-                        <input
-                          type="text"
-                          value={opt.text}
-                          onChange={(e) => handleOptionChange(stepIdx, optIdx, 'text', e.target.value)}
-                          placeholder={`Texto de opción ${optIdx + 1}...`}
-                          className="w-full bg-f1-card border border-f1-border rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
-                        />
+                {/* Opciones con asignación de puntos y justificación pedagógica */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-mono text-slate-400 uppercase font-bold">
+                      OPCIONES DE RESPUESTA ({step.options?.length || 0}) Y FUNDAMENTACIÓN:
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleAddOption(stepIdx)}
+                      className="px-2.5 py-1 bg-f1-cyan/10 hover:bg-f1-cyan/20 text-f1-cyan border border-f1-cyan/30 rounded-lg text-[11px] font-mono font-bold flex items-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>AÑADIR OPCIÓN</span>
+                    </button>
+                  </div>
+
+                  {step.options?.map((opt, optIdx) => {
+                    const letter = String.fromCharCode(65 + optIdx);
+                    return (
+                      <div key={opt.id || optIdx} className="p-3 bg-f1-card/80 rounded-xl border border-f1-border space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-f1-dark text-f1-cyan border border-f1-border font-mono text-xs font-black flex items-center justify-center flex-shrink-0">
+                            {letter}
+                          </span>
+                          <input
+                            type="text"
+                            value={opt.text}
+                            onChange={(e) => handleOptionChange(stepIdx, optIdx, 'text', e.target.value)}
+                            placeholder={`Texto de opción ${letter}...`}
+                            className="flex-1 bg-f1-dark border border-f1-border rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-f1-yellow"
+                          />
+                          <div className="flex items-center gap-1 w-28 flex-shrink-0">
+                            <input
+                              type="number"
+                              value={opt.points}
+                              onChange={(e) => handleOptionChange(stepIdx, optIdx, 'points', e.target.value)}
+                              className="w-16 bg-f1-dark border border-f1-border rounded-lg px-2 py-1.5 text-xs font-mono font-bold text-yellow-400 text-center focus:outline-none"
+                            />
+                            <span className="text-[10px] font-mono text-slate-400">PTS</span>
+                          </div>
+                          {step.options.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveOption(stepIdx, optIdx)}
+                              className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
+                              title="Eliminar opción"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {/* Fundamento Pedagógico / Explicación del Presentador */}
+                        <div className="flex items-center gap-2 pl-8">
+                          <span className="text-[10px] font-mono text-amber-300 uppercase flex-shrink-0">
+                            💡 FUNDAMENTO:
+                          </span>
+                          <input
+                            type="text"
+                            value={opt.feedback || ''}
+                            onChange={(e) => handleOptionChange(stepIdx, optIdx, 'feedback', e.target.value)}
+                            placeholder="Explicación o argumento pedagógico para el orador..."
+                            className="flex-1 bg-f1-dark/60 border border-f1-border/60 rounded-lg px-2.5 py-1 text-[11px] font-sans text-slate-300 focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
                       </div>
-                      <div className="col-span-3 flex items-center gap-1">
-                        <input
-                          type="number"
-                          value={opt.points}
-                          onChange={(e) => handleOptionChange(stepIdx, optIdx, 'points', e.target.value)}
-                          className="w-full bg-f1-card border border-f1-border rounded-lg px-2 py-1.5 text-xs font-mono font-bold text-yellow-400 text-center focus:outline-none"
-                        />
-                        <span className="text-[10px] font-mono text-slate-500">PTS</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}

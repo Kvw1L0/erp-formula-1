@@ -10,6 +10,8 @@ import DebriefModal from '../../components/race/DebriefModal';
 import SafetyCarOverlay from '../../components/race/SafetyCarOverlay';
 import OvertakeBanner from '../../components/race/OvertakeBanner';
 import QrConnectModal from '../../components/common/QrConnectModal';
+import TeamEventOverlay from '../../components/race/TeamEventOverlay';
+import RouletteModal from '../../components/admin/RouletteModal';
 import { exportTrainingReportCsv } from '../../lib/reportExporter';
 import { sounds } from '../../lib/soundEffects';
 import { Flag, Zap, Volume2, VolumeX, Maximize, Trophy, Clock, Users, Compass, BookOpen, Film, AlertTriangle, TrendingUp, FastForward, AlertOctagon, CloudRain, ShieldAlert, QrCode, FileSpreadsheet } from 'lucide-react';
@@ -217,12 +219,6 @@ export default function RaceScreenPage() {
       if (hasDRS) {
         setTimeout(() => sounds.playDRSActive(), 600);
       }
-
-      const podiumTimer = setTimeout(() => {
-        setShowPodium(true);
-      }, 3500);
-
-      return () => clearTimeout(podiumTimer);
     }, 1800);
 
     return () => clearTimeout(nitroTimer);
@@ -431,89 +427,12 @@ export default function RaceScreenPage() {
           </div>
         </div>
 
-        {/* Indicadores y Controles */}
-        <div className="flex items-center gap-2.5 flex-wrap self-end md:self-auto font-mono text-xs">
-          {/* Botón Siguiente Sector (Visible cuando finaliza y revela la ronda) */}
-          {isRevealed && (
-            <button
-              onClick={handleNextSectorFromScreen}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-f1-yellow to-amber-500 hover:from-amber-400 text-black font-black uppercase flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
-            >
-              <span>SIGUIENTE CASO / SECTOR</span>
-              <FastForward className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Podio / Clasificación */}
-          {isRevealed && (
-            <button
-              onClick={() => setShowPodium(true)}
-              className="px-3.5 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-mono font-black text-xs rounded-xl shadow-md transition-all animate-bounce flex items-center gap-1.5"
-            >
-              <Trophy className="w-4 h-4" />
-              <span>PODIO</span>
-            </button>
-          )}
-
-          {/* Debrief Pedagógico NetSuite */}
-          {(isRevealed || gameState?.currentCase) && (
-            <button
-              onClick={() => setShowDebrief(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-f1-cyan/15 hover:bg-f1-cyan/25 text-f1-cyan border border-f1-cyan/40 font-mono font-bold text-xs rounded-xl shadow-md transition-all"
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span>DEBRIEF PITS</span>
-            </button>
-          )}
-
-          {/* Solución ERP */}
-          {gameState?.currentCase && (
-            <button
-              onClick={() => setShowSolution(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-f1-dark hover:bg-slate-800 text-slate-200 border border-f1-border font-mono font-bold text-xs rounded-xl shadow-md transition-all"
-            >
-              <BookOpen className="w-4 h-4 text-f1-cyan" />
-              <span>SOLUCIÓN</span>
-            </button>
-          )}
-
-          {/* Conectar Tablets (QR) */}
-          <button
-            onClick={() => setShowQrModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-f1-cyan/15 hover:bg-f1-cyan/25 text-f1-cyan border border-f1-cyan/40 font-mono font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
-            title="Desplegar Código QR para conectar las tablets de los participantes"
-          >
-            <QrCode className="w-4 h-4" />
-            <span className="hidden sm:inline">CONECTAR TABLETS</span>
-          </button>
-
-          {/* Exportar Reporte CSV / Excel */}
-          <button
-            onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 font-mono font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
-            title="Descargar Reporte Ejecutivo de Resultados en CSV / Excel"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span className="hidden lg:inline">REPORTE EXCEL</span>
-          </button>
-
-          {/* Toggle Cinemática */}
-          <button
-            onClick={() => setEnableCinematic(!enableCinematic)}
-            className={`p-2 rounded-xl border font-mono text-xs flex items-center gap-1.5 transition-colors ${
-              enableCinematic
-                ? 'bg-f1-cyan/10 border-f1-cyan/40 text-f1-cyan'
-                : 'bg-f1-dark border-f1-border text-slate-500'
-            }`}
-            title="Activar/Desactivar cinemáticas de video"
-          >
-            <Film className="w-4 h-4" />
-          </button>
-
+        {/* Controles Esenciales de Emisión */}
+        <div className="flex items-center gap-2.5 self-end md:self-auto font-mono text-xs">
           {/* Mute */}
           <button
             onClick={toggleMute}
-            className="p-2 rounded-xl bg-f1-dark border border-f1-border text-slate-400 hover:text-white transition-colors"
+            className="p-2.5 rounded-xl bg-f1-dark border border-f1-border text-slate-400 hover:text-white transition-colors"
             title={isMuted ? 'Activar Sonido F1' : 'Silenciar Audio'}
           >
             {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-f1-green" />}
@@ -522,7 +441,8 @@ export default function RaceScreenPage() {
           {/* Fullscreen */}
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-xl bg-f1-dark border border-f1-border text-slate-400 hover:text-white transition-colors"
+            className="p-2.5 rounded-xl bg-f1-dark border border-f1-border text-slate-400 hover:text-white transition-colors"
+            title="Pantalla Completa"
           >
             <Maximize className="w-4 h-4" />
           </button>
@@ -576,33 +496,52 @@ export default function RaceScreenPage() {
         </div>
       </footer>
 
-      {/* MODALES */}
-      {showPodium && resultsData && (
+      {/* MODALES Y OVERLAYS ACTIVADOS DESDE DIRECCIÓN DE CARRERA */}
+      {(gameState?.showPodium || showPodium) && (resultsData || gameState?.calculatedResults) && (
         <PodiumModal
-          results={resultsData}
+          results={resultsData || gameState?.calculatedResults}
           sectorIndex={currentSectorIndex}
           totalSectors={totalSectors}
-          onClose={() => setShowPodium(false)}
+          onClose={() => {
+            setShowPodium(false);
+            cloudActions.togglePodium(false);
+          }}
         />
       )}
 
-      {showSolution && gameState?.currentCase && (
+      {(gameState?.showSolutionsOverlay || showSolution) && gameState?.currentCase && (
         <CaseSolutionModal
           caseData={gameState.currentCase}
-          onClose={() => setShowSolution(false)}
+          onClose={() => {
+            setShowSolution(false);
+            cloudActions.toggleSolutionsOverlay(false);
+          }}
         />
       )}
 
-      {showDebrief && (
-        <DebriefModal
-          caseData={gameState?.currentCase}
-          results={resultsData || gameState?.calculatedResults}
-          onClose={() => setShowDebrief(false)}
+      {(gameState?.showQrModal || showQrModal) && (
+        <QrConnectModal onClose={() => {
+          setShowQrModal(false);
+          cloudActions.toggleQrModal(false);
+        }} />
+      )}
+
+      {gameState?.isTeamEventActive && (
+        <TeamEventOverlay
+          title={gameState?.teamEventTitle || '¡DINÁMICA DE EQUIPO EN VIVO!'}
+          description={gameState?.teamEventDescription || 'Todos los pilotos deben seguir las instrucciones del Facilitador en el escenario.'}
+          canClose={true}
+          onClose={() => cloudActions.toggleTeamEvent(false)}
         />
       )}
 
-      {showQrModal && (
-        <QrConnectModal onClose={() => setShowQrModal(false)} />
+      {gameState?.roulette?.active && (
+        <RouletteModal
+          teamsProfiles={gameState?.teamsProfiles || {}}
+          isGiantScreen={true}
+          rouletteState={gameState.roulette}
+          onClose={() => cloudActions.setRouletteState(null)}
+        />
       )}
     </div>
   );

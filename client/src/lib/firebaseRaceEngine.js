@@ -561,11 +561,12 @@ class FirebaseRaceEngine {
   // 12. Convocatoria a Escenario (Disparador de Eventos)
   async triggerStageSummon(teamId, reason = 'Dinámica en Escenario', active = true) {
     this.init();
-    if (!this.db) return;
+    if (!this.db) return null;
 
     if (!active) {
       await set(ref(this.db, 'f1_race/stage_summon'), null);
-      return;
+      await update(ref(this.db, 'f1_race/state'), { stageSummon: null });
+      return null;
     }
 
     const numId = Number(teamId);
@@ -584,6 +585,7 @@ class FirebaseRaceEngine {
     };
 
     await set(ref(this.db, 'f1_race/stage_summon'), summonData);
+    await update(ref(this.db, 'f1_race/state'), { stageSummon: summonData });
     return summonData;
   }
 
@@ -652,6 +654,56 @@ class FirebaseRaceEngine {
     if (!this.db) return {};
     const snap = await get(ref(this.db, 'f1_race/history'));
     return snap.val() || {};
+  }
+
+  // 19. Mostrar/Ocultar Soluciones Correctas en Pantalla Gigante
+  async toggleSolutionsOverlay(active) {
+    this.init();
+    if (!this.db) return;
+    await update(ref(this.db, 'f1_race/state'), {
+      showSolutionsOverlay: !!active
+    });
+  }
+
+  // 20. Proyectar/Ocultar Código QR en Pantalla Gigante
+  async toggleQrModal(active) {
+    this.init();
+    if (!this.db) return;
+    await update(ref(this.db, 'f1_race/state'), {
+      showQrModal: !!active
+    });
+  }
+
+  // 21. Mostrar/Ocultar Podio Exclusivamente por Orden del Moderador
+  async togglePodium(active) {
+    this.init();
+    if (!this.db) return;
+    await update(ref(this.db, 'f1_race/state'), {
+      showPodium: !!active
+    });
+  }
+
+  // 22. Llamar a Evento / Dinámica de Equipo en Escenario
+  async toggleTeamEvent(active, title = 'DINÁMICA DE EQUIPO EN ESCENARIO', description = '¡Atención todos los pilotos a la competencia en vivo!') {
+    this.init();
+    if (!this.db) return;
+    await update(ref(this.db, 'f1_race/state'), {
+      isTeamEventActive: !!active,
+      teamEventTitle: title,
+      teamEventDescription: description,
+      teamEventTimestamp: active ? Date.now() : null
+    });
+  }
+
+  // 23. Control Remoto de la Ruleta en Pantalla Gigante
+  async setRouletteState(rouletteData) {
+    this.init();
+    if (!this.db) return;
+    if (!rouletteData || !rouletteData.active) {
+      await set(ref(this.db, 'f1_race/state/roulette'), null);
+    } else {
+      await set(ref(this.db, 'f1_race/state/roulette'), rouletteData);
+    }
   }
 }
 

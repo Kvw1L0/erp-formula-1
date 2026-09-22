@@ -7,6 +7,7 @@ import CountdownBar from '../../components/participant/CountdownBar';
 import CaseFlow from '../../components/participant/CaseFlow';
 import PitsBlocked from '../../components/participant/PitsBlocked';
 import SuperBoostMinigame from '../../components/participant/SuperBoostMinigame';
+import TeamEventOverlay from '../../components/race/TeamEventOverlay';
 import { Flag, Activity, Wifi, WifiOff, Clock, Compass, Zap, ShieldAlert, Radio, AlertOctagon, CloudRain, Users, CheckCircle2 } from 'lucide-react';
 import { sounds, triggerHaptic } from '../../lib/soundEffects';
 
@@ -251,6 +252,15 @@ export default function ParticipantPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* 🏆 OVERLAY DE DINÁMICA DE EQUIPO / EVENTO EN ESCENARIO */}
+      {gameState?.isTeamEventActive && (
+        <TeamEventOverlay
+          title={gameState?.teamEventTitle || '¡DINÁMICA DE EQUIPO EN VIVO!'}
+          description={gameState?.teamEventDescription || 'Todos los pilotos deben seguir las instrucciones del Facilitador en el escenario.'}
+          canClose={false}
+        />
       )}
 
       {/* 🚨 BANNER DE BANDERA ROJA */}

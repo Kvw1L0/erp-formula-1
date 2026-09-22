@@ -46,6 +46,17 @@ export function SocketProvider({ children }) {
           setGameState(prev => ({
             ...prev,
             ...state,
+            showSolutionsOverlay: !!state.showSolutionsOverlay,
+            showQrModal: !!state.showQrModal,
+            showPodium: !!state.showPodium,
+            isTeamEventActive: !!state.isTeamEventActive,
+            teamEventTitle: state.teamEventTitle || '',
+            teamEventDescription: state.teamEventDescription || '',
+            roulette: state.roulette || null,
+            stageSummon: state.stageSummon || null,
+            isSafetyCarActive: !!state.isSafetyCarActive,
+            isRedFlagActive: !!state.isRedFlagActive,
+            isWetRaceActive: !!state.isWetRaceActive,
             teamTelemetry: prev.teamTelemetry
           }));
         }
@@ -353,6 +364,61 @@ export function SocketProvider({ children }) {
         return await firebaseRaceEngine.getChampionshipHistory();
       }
       return {};
+    },
+
+    toggleSolutionsOverlay: async (active) => {
+      if (isFirebaseConfigured()) {
+        await firebaseRaceEngine.toggleSolutionsOverlay(active);
+        return { success: true };
+      }
+      setGameState(prev => ({ ...prev, showSolutionsOverlay: !!active }));
+      socket?.emit('admin_toggle_solutions', { active });
+      return { success: true };
+    },
+
+    toggleQrModal: async (active) => {
+      if (isFirebaseConfigured()) {
+        await firebaseRaceEngine.toggleQrModal(active);
+        return { success: true };
+      }
+      setGameState(prev => ({ ...prev, showQrModal: !!active }));
+      socket?.emit('admin_toggle_qr', { active });
+      return { success: true };
+    },
+
+    togglePodium: async (active) => {
+      if (isFirebaseConfigured()) {
+        await firebaseRaceEngine.togglePodium(active);
+        return { success: true };
+      }
+      setGameState(prev => ({ ...prev, showPodium: !!active }));
+      socket?.emit('admin_toggle_podium', { active });
+      return { success: true };
+    },
+
+    toggleTeamEvent: async (active, title, description) => {
+      if (isFirebaseConfigured()) {
+        await firebaseRaceEngine.toggleTeamEvent(active, title, description);
+        return { success: true };
+      }
+      setGameState(prev => ({
+        ...prev,
+        isTeamEventActive: !!active,
+        teamEventTitle: title,
+        teamEventDescription: description
+      }));
+      socket?.emit('admin_toggle_team_event', { active, title, description });
+      return { success: true };
+    },
+
+    setRouletteState: async (rouletteData) => {
+      if (isFirebaseConfigured()) {
+        await firebaseRaceEngine.setRouletteState(rouletteData);
+        return { success: true };
+      }
+      setGameState(prev => ({ ...prev, roulette: rouletteData }));
+      socket?.emit('admin_set_roulette', { rouletteData });
+      return { success: true };
     }
   };
 

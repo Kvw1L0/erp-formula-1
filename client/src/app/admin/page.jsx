@@ -12,7 +12,7 @@ import {
   Flag, Play, Lock, Eye, RotateCcw, ShieldCheck, Trophy, Sparkles,
   FastForward, Zap, Compass, Flame, AlertOctagon, Users, BarChart3,
   Radio, Clock, AlertTriangle, CloudRain, ShieldAlert, CheckCircle2,
-  Volume2, ArrowRightLeft, Send, Trash2, QrCode, FileSpreadsheet
+  Volume2, ArrowRightLeft, Send, Trash2, QrCode, FileSpreadsheet, BookOpen, Lightbulb
 } from 'lucide-react';
 import { OFFICIAL_TEAMS } from '../../components/participant/PinLogin';
 
@@ -769,12 +769,34 @@ export default function AdminPage() {
     }
   };
 
-  const handleToggleVSC = async () => {
+  const handleToggleTeamEvent = async () => {
     setIsLoading(true);
-    const newStatus = !isVSCActive;
-    await cloudActions.toggleSafetyCar(newStatus);
+    const newStatus = !gameState?.isTeamEventActive;
+    await cloudActions.toggleTeamEvent(
+      newStatus,
+      '¡DINÁMICA DE EQUIPO EN VIVO!',
+      'Todos los pilotos deben seguir las instrucciones del Facilitador en el escenario.'
+    );
     setIsLoading(false);
-    setNotification(newStatus ? '⚠️ Virtual Safety Car DESPLEGADO (Brechas comprimidas al 50%).' : '🟢 Virtual Safety Car FINALIZADO.');
+    setNotification(newStatus ? '🏆 Dinámica de Equipo ACTIVADA en Pantalla Gigante y Tablets.' : '🟢 Dinámica de Equipo finalizada.');
+    setTimeout(() => setNotification(''), 4000);
+  };
+
+  const handleToggleSolutions = async () => {
+    setIsLoading(true);
+    const newStatus = !gameState?.showSolutionsOverlay;
+    await cloudActions.toggleSolutionsOverlay(newStatus);
+    setIsLoading(false);
+    setNotification(newStatus ? '💡 Soluciones técnicas y fundamentación proyectadas en Pantalla Gigante.' : '💡 Soluciones ocultadas de Pantalla Gigante.');
+    setTimeout(() => setNotification(''), 4000);
+  };
+
+  const handleTogglePodium = async () => {
+    setIsLoading(true);
+    const newStatus = !gameState?.showPodium;
+    await cloudActions.togglePodium(newStatus);
+    setIsLoading(false);
+    setNotification(newStatus ? '🏆 Podio y Clasificación proyectados en Pantalla Gigante.' : '🏆 Podio ocultado de Pantalla Gigante.');
     setTimeout(() => setNotification(''), 4000);
   };
 
@@ -788,13 +810,6 @@ export default function AdminPage() {
   const handleExtendTimer = async () => {
     await cloudActions.extendTimer(30);
     setNotification('⏱️ +30 Segundos añadidos en tiempo real al cronómetro.');
-    setTimeout(() => setNotification(''), 4000);
-  };
-
-  const handleToggleWetRace = async () => {
-    const newStatus = !isWetRaceActive;
-    await cloudActions.setWetRace(newStatus);
-    setNotification(newStatus ? '🌧️ PISTA MOJADA: Modo lluvia activo en pantalla gigante.' : '☀️ Pista Seca restaurada.');
     setTimeout(() => setNotification(''), 4000);
   };
 
@@ -814,7 +829,8 @@ export default function AdminPage() {
   };
 
   const handleCancelSummon = async () => {
-    await cloudActions.triggerStageSummon(summonTeamId, '', false);
+    const activeTeamId = gameState?.stageSummon?.teamId || summonTeamId;
+    await cloudActions.triggerStageSummon(activeTeamId, '', false);
     setNotification(`Alerta de convocatoria cancelada.`);
     setTimeout(() => setNotification(''), 3000);
   };
@@ -897,12 +913,21 @@ export default function AdminPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setShowQrModal(true)}
-              className="px-3.5 py-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/40 font-mono text-xs font-bold uppercase flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
-              title="Abrir Código QR para conexión instantánea de tablets"
+              onClick={async () => {
+                const nextState = !gameState?.showQrModal;
+                await cloudActions.toggleQrModal(nextState);
+                setNotification(nextState ? '📱 Código QR desplegado en Pantalla Gigante para los participantes.' : '📱 Código QR cerrado en Pantalla Gigante.');
+                setTimeout(() => setNotification(''), 3000);
+              }}
+              className={`px-3.5 py-2 rounded-xl font-mono text-xs font-bold uppercase flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer ${
+                gameState?.showQrModal
+                  ? 'bg-cyan-500 text-black border border-cyan-300 animate-pulse shadow-cyan-500/30'
+                  : 'bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/40'
+              }`}
+              title="Mostrar u ocultar código QR en la Pantalla Gigante"
             >
-              <QrCode className="w-4 h-4 text-cyan-400" />
-              <span>Conectar Tablets</span>
+              <QrCode className="w-4 h-4" />
+              <span>{gameState?.showQrModal ? 'QR en Pantalla (ACTIVO)' : 'Conectar Tablets (QR)'}</span>
             </button>
 
             <button
@@ -1067,38 +1092,72 @@ export default function AdminPage() {
                   2. CONTROLES TÁCTICOS EN VIVO:
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-                  {/* Ruleta de Pilotos */}
+                  {/* 1. Dinámica de Equipo / Evento en Escenario (Reemplazo Safety Car) */}
+                  <button
+                    type="button"
+                    onClick={handleToggleTeamEvent}
+                    disabled={isLoading}
+                    className={`p-3 rounded-xl font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border cursor-pointer ${
+                      gameState?.isTeamEventActive
+                        ? 'bg-gradient-to-r from-yellow-400 via-amber-500 to-purple-600 text-black border-yellow-300 animate-pulse shadow-lg shadow-yellow-500/40'
+                        : 'bg-purple-950/40 text-purple-300 border-purple-500/40 hover:bg-purple-900/50'
+                    }`}
+                    title="Lanzar dinámica interactiva con banner dorado/púrpura en la pantalla gigante y tablets"
+                  >
+                    <Trophy className="w-4 h-4" />
+                    <span>{gameState?.isTeamEventActive ? '🛑 Finalizar Evento' : '🏆 Dinámica Equipo'}</span>
+                  </button>
+
+                  {/* 2. Soluciones Técnicas en Pantalla Gigante */}
+                  <button
+                    type="button"
+                    onClick={handleToggleSolutions}
+                    disabled={isLoading}
+                    className={`p-3 rounded-xl font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border cursor-pointer ${
+                      gameState?.showSolutionsOverlay
+                        ? 'bg-cyan-500 text-black border-cyan-300 animate-pulse shadow-cyan-500/40'
+                        : 'bg-slate-800 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/10'
+                    }`}
+                    title="Proyectar las respuestas correctas y fundamentación en la pantalla gigante"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    <span>{gameState?.showSolutionsOverlay ? 'Ocultar Solución' : '💡 Mostrar Solución'}</span>
+                  </button>
+
+                  {/* 3. Podio y Clasificación en Pantalla Gigante */}
+                  <button
+                    type="button"
+                    onClick={handleTogglePodium}
+                    disabled={isLoading}
+                    className={`p-3 rounded-xl font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border cursor-pointer ${
+                      gameState?.showPodium
+                        ? 'bg-yellow-500 text-black border-yellow-300 animate-pulse shadow-yellow-500/40'
+                        : 'bg-slate-800 text-yellow-300 border-yellow-500/30 hover:bg-yellow-500/10'
+                    }`}
+                    title="Proyectar el podio y clasificación oficial en la pantalla gigante"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>{gameState?.showPodium ? 'Ocultar Podio' : '🏆 Mostrar Podio'}</span>
+                  </button>
+
+                  {/* 4. Ruleta de Pilotos en Pantalla Gigante */}
                   <button
                     type="button"
                     onClick={() => setShowRoulette(true)}
-                    className="p-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95"
+                    className="p-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
+                    title="Abrir ruleta interactiva sincronizada para la pantalla gigante"
                   >
                     <span className="text-base">🎡</span>
                     <span>Ruleta Pilotos</span>
                   </button>
 
-                  {/* Virtual Safety Car Toggle */}
-                  <button
-                    type="button"
-                    onClick={handleToggleVSC}
-                    disabled={isLoading}
-                    className={`p-3 rounded-xl font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border ${
-                      isVSCActive
-                        ? 'bg-amber-500 text-black border-amber-300 animate-pulse shadow-amber-500/40'
-                        : 'bg-slate-800 text-amber-300 border-amber-500/30 hover:bg-amber-500/10'
-                    }`}
-                  >
-                    <AlertOctagon className="w-4 h-4" />
-                    <span>{isVSCActive ? 'Desactivar VSC' : 'Safety Car'}</span>
-                  </button>
-
-                  {/* Bandera Roja Toggle */}
+                  {/* 5. Bandera Roja Toggle */}
                   <button
                     type="button"
                     onClick={handleToggleRedFlag}
-                    className={`p-3 rounded-xl font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border ${
+                    className={`p-3 rounded-xl font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border cursor-pointer ${
                       isRedFlagActive
-                        ? 'bg-red-600 text-white border-red-300 animate-pulse'
+                        ? 'bg-red-600 text-white border-red-300 animate-pulse shadow-red-600/40'
                         : 'bg-slate-800 text-red-400 border-red-500/30 hover:bg-red-500/10'
                     }`}
                   >
@@ -1106,38 +1165,14 @@ export default function AdminPage() {
                     <span>{isRedFlagActive ? 'Reanudar Carrera' : 'Bandera Roja'}</span>
                   </button>
 
-                  {/* Prórroga +30s */}
+                  {/* 6. Prórroga +30s */}
                   <button
                     type="button"
                     onClick={handleExtendTimer}
-                    className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95"
+                    className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
                   >
                     <Clock className="w-4 h-4" />
                     <span>+30s Prórroga</span>
-                  </button>
-
-                  {/* Modo Lluvia */}
-                  <button
-                    type="button"
-                    onClick={handleToggleWetRace}
-                    className={`p-3 rounded-xl font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border ${
-                      isWetRaceActive
-                        ? 'bg-cyan-500 text-black border-cyan-300 animate-pulse'
-                        : 'bg-slate-800 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10'
-                    }`}
-                  >
-                    <CloudRain className="w-4 h-4" />
-                    <span>{isWetRaceActive ? 'Pista Seca' : 'Modo Lluvia'}</span>
-                  </button>
-
-                  {/* Debrief NetSuite */}
-                  <button
-                    type="button"
-                    onClick={() => setShowDebrief(true)}
-                    className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-f1-cyan border border-f1-cyan/40 font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1 transition-all active:scale-95"
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    <span>Debrief Pits</span>
                   </button>
                 </div>
               </div>
@@ -1176,21 +1211,21 @@ export default function AdminPage() {
                       })}
                     </select>
 
-                    <button
-                      type="button"
-                      onClick={handleTriggerSummon}
-                      className="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs uppercase transition-all flex items-center gap-1 shadow-md shadow-red-600/30"
-                    >
-                      <span>Llamar</span>
-                    </button>
-
-                    {gameState?.stageSummon?.active && (
+                    {gameState?.stageSummon?.active ? (
                       <button
                         type="button"
                         onClick={handleCancelSummon}
-                        className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 font-mono text-xs uppercase"
+                        className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs uppercase transition-all flex items-center gap-1 shadow-md shadow-amber-500/30 animate-pulse cursor-pointer"
                       >
-                        Cancelar
+                        <span>🛑 Desactivar Llamado (#{gameState.stageSummon.teamId})</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleTriggerSummon}
+                        className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs uppercase transition-all flex items-center gap-1 shadow-md shadow-red-600/30 cursor-pointer"
+                      >
+                        <span>📢 Convocar</span>
                       </button>
                     )}
                   </div>
@@ -1287,6 +1322,8 @@ export default function AdminPage() {
       {showRoulette && (
         <RouletteModal
           teamsProfiles={teamsProfiles}
+          rouletteState={gameState?.roulette}
+          onSyncRoulette={(data) => cloudActions.setRouletteState(data)}
           onClose={() => setShowRoulette(false)}
         />
       )}

@@ -15,16 +15,22 @@ class SoundEngine {
     if (!this.ctx && typeof window !== 'undefined') {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) {
-        this.ctx = new AudioContext();
+        try {
+          this.ctx = new AudioContext();
+        } catch (e) {
+          console.warn('AudioContext init note:', e);
+        }
       }
     }
   }
 
   ensureContext() {
-    this.init();
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
+    try {
+      this.init();
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch (e) {}
   }
 
   setMuted(muted) {
@@ -547,14 +553,27 @@ class SoundEngine {
 }
 
 export const triggerHaptic = (pattern = [40, 30, 40]) => {
-  if (typeof window !== 'undefined' && 'vibrate' in navigator && typeof navigator.vibrate === 'function') {
-    try {
+  try {
+    if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator && typeof navigator.vibrate === 'function') {
       navigator.vibrate(pattern);
-    } catch (e) {}
-  }
+    }
+  } catch (e) {}
 };
 
 const soundEngineInstance = new SoundEngine();
+
+// Desbloqueo automático para iOS Safari ante la primera interacción táctil
+if (typeof window !== 'undefined') {
+  const unlockAudioOnTouch = () => {
+    soundEngineInstance.ensureContext();
+    window.removeEventListener('touchstart', unlockAudioOnTouch, true);
+    window.removeEventListener('touchend', unlockAudioOnTouch, true);
+    window.removeEventListener('click', unlockAudioOnTouch, true);
+  };
+  window.addEventListener('touchstart', unlockAudioOnTouch, true);
+  window.addEventListener('touchend', unlockAudioOnTouch, true);
+  window.addEventListener('click', unlockAudioOnTouch, true);
+}
 
 // Proxy de seguridad: garantiza que NUNCA una llamada a un sonido inexistente arroje TypeError
 export const sounds = new Proxy(soundEngineInstance, {
