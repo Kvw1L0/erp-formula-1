@@ -7,7 +7,7 @@ import CountdownBar from '../../components/participant/CountdownBar';
 import CaseFlow from '../../components/participant/CaseFlow';
 import PitsBlocked from '../../components/participant/PitsBlocked';
 import TeamEventOverlay from '../../components/race/TeamEventOverlay';
-import { Flag, Activity, Wifi, WifiOff, Clock, Compass, Zap, ShieldAlert, Radio, AlertOctagon, CloudRain, Users, CheckCircle2 } from 'lucide-react';
+import { Flag, Activity, Wifi, WifiOff, Clock, Compass, Zap, ShieldAlert, Radio, AlertOctagon, CloudRain, Users, CheckCircle2, Trophy, Medal, Sparkles } from 'lucide-react';
 import { sounds, triggerHaptic } from '../../lib/soundEffects';
 
 export default function ParticipantPage() {
@@ -200,6 +200,10 @@ export default function ParticipantPage() {
   const totalSectors = gameState?.totalSectors || 5;
   const isRedFlag = !!gameState?.isRedFlagActive;
   const isWetRace = !!gameState?.isWetRaceActive;
+  const isChampionshipEnded = sectorIndex >= totalSectors && (gameState?.status === 'REVEALED' || gameState?.status === 'CHAMPIONSHIP_FINISHED');
+  const teamTelem = gameState?.teamTelemetry?.[team.id] || {};
+  const myPosition = teamTelem.currentPosition || team.id;
+  const myDistance = teamTelem.currentDistance || 0;
 
   return (
     <div className="min-h-screen bg-carbon flex flex-col justify-between pt-16 pb-6 px-4 md:px-8 relative selection:bg-f1-red selection:text-white">
@@ -315,7 +319,53 @@ export default function ParticipantPage() {
 
       {/* Cuerpo Principal */}
       <main className="my-auto py-6 max-w-4xl mx-auto w-full flex flex-col justify-center">
-        {hasSubmitted ? (
+        {isChampionshipEnded ? (
+          <div className="max-w-md mx-auto w-full bg-f1-card p-6 md:p-8 rounded-3xl border-2 border-yellow-400 shadow-2xl text-center relative overflow-hidden animate-fadeIn space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-yellow-400/20 border border-yellow-400/50 flex items-center justify-center mx-auto text-yellow-400 shadow-lg shadow-yellow-400/20">
+              {myPosition === 1 ? (
+                <Trophy className="w-10 h-10 animate-bounce text-yellow-400" />
+              ) : myPosition <= 3 ? (
+                <Medal className="w-10 h-10 animate-pulse text-yellow-300" />
+              ) : (
+                <Flag className="w-10 h-10 text-f1-cyan" />
+              )}
+            </div>
+
+            <div>
+              <span className="text-xs font-mono font-black text-yellow-300 tracking-wider uppercase block">
+                GRAN PREMIO FINALIZADO
+              </span>
+              <h2 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tight mt-1">
+                {myPosition === 1
+                  ? '¡SOMOS CAMPEONES!'
+                  : myPosition <= 3
+                  ? `¡PODIO OFICIAL P${myPosition}!`
+                  : `POSICIÓN FINAL P${myPosition}`}
+              </h2>
+            </div>
+
+            {/* Escudería y Posición */}
+            <div
+              className="p-4 rounded-2xl border-2 border-white shadow-lg text-white"
+              style={{ backgroundColor: team.color || '#E10600' }}
+            >
+              <span className="text-xs font-mono text-white/90 uppercase block font-bold">
+                ESCUDERÍA #{team.id}
+              </span>
+              <h3 className="text-xl md:text-2xl font-black uppercase italic tracking-wide">
+                {team.subname || team.name}
+              </h3>
+              <div className="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-white/20 text-xs font-mono font-bold">
+                <span>POSICIÓN: P{myPosition}</span>
+                <span>AVANCE: {myDistance}%</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-f1-dark/80 rounded-xl border border-f1-border text-xs text-slate-300 font-sans">
+              🏆 ¡Atención a la pantalla gigante para la ceremonia de premiación y podio!
+            </div>
+          </div>
+        ) : hasSubmitted ? (
           <PitsBlocked
             team={team}
             durationFormatted={submissionTimeFormatted}

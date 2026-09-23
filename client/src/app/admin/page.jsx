@@ -12,7 +12,8 @@ import {
   Flag, Play, Lock, Eye, RotateCcw, ShieldCheck, Trophy, Sparkles,
   FastForward, Zap, Compass, Flame, AlertOctagon, Users, BarChart3,
   Radio, Clock, AlertTriangle, CloudRain, ShieldAlert, CheckCircle2,
-  Volume2, ArrowRightLeft, Send, Trash2, QrCode, FileSpreadsheet, BookOpen, Lightbulb
+  Volume2, ArrowRightLeft, Send, Trash2, QrCode, FileSpreadsheet, BookOpen, Lightbulb,
+  Upload, Image as ImageIcon
 } from 'lucide-react';
 import { OFFICIAL_TEAMS } from '../../components/participant/PinLogin';
 
@@ -32,6 +33,7 @@ export default function AdminPage() {
   const [summonTeamId, setSummonTeamId] = useState('1');
   const [summonReason, setSummonReason] = useState('Dinámica en Escenario');
   const [radioText, setRadioText] = useState('');
+  const [customBgUrl, setCustomBgUrl] = useState('');
 
   const handleExportCsv = async () => {
     let historyData = {};
@@ -186,10 +188,74 @@ export default function AdminPage() {
     setTimeout(() => setNotification(''), 5000);
   };
 
+  // Sincronizar automáticamente el caso seleccionado con el sector actual
+  useEffect(() => {
+    if (currentSector) {
+      const casePadded = `case-${String(currentSector).padStart(2, '0')}`;
+      if (cases.some(c => c.id === casePadded)) {
+        setSelectedCaseId(casePadded);
+      }
+    }
+  }, [currentSector, cases]);
+
   const handleSetTrackBackground = async (bgPreset) => {
     await cloudActions.setTrackBackground(bgPreset);
     const name = TRACK_BACKGROUND_OPTIONS.find(o => o.id === bgPreset)?.name || bgPreset;
     setNotification(`🎨 Fondo de pista actualizado a: ${name}`);
+    setTimeout(() => setNotification(''), 3000);
+  };
+
+  const handleFileUploadBg = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona una imagen válida (PNG, JPG o WebP).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawBase64 = event.target?.result;
+      if (!rawBase64) return;
+
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1920;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const optimizedDataUrl = canvas.toDataURL(mimeType, 0.85);
+
+        await cloudActions.setTrackBackground(optimizedDataUrl);
+        setNotification('🖼️ Fondo de pista personalizado (PNG/JPG) cargado y activado.');
+        setTimeout(() => setNotification(''), 4000);
+      };
+      img.src = rawBase64;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCustomUrlBg = async (e) => {
+    if (e) e.preventDefault();
+    if (!customBgUrl.trim()) return;
+    await cloudActions.setTrackBackground(customBgUrl.trim());
+    setNotification('🌐 Fondo de pista por URL activado.');
+    setCustomBgUrl('');
     setTimeout(() => setNotification(''), 3000);
   };
 
@@ -239,7 +305,7 @@ export default function AdminPage() {
                 )}
               </div>
               <p className="text-xs font-mono text-slate-400">
-                SISTEMA PROGRESIVO DE 10 SECTORES • ERP NETSUITE
+                SISTEMA PROGRESIVO DE 5 SECTORES • GRAN PREMIO ERP
               </p>
             </div>
           </div>
@@ -510,16 +576,34 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Fila 2.1: Selector de Fondo de Pista */}
-              <div className="pt-2 border-t border-f1-border/40">
-                <div className="flex items-center justify-between mb-2">
+              {/* Fila 2.1: Selector de Fondo de Pista (Presets y Carga de PNG/JPG Personalizado) */}
+              <div className="pt-2 border-t border-f1-border/40 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
                     3. FONDO DE PISTA (PANTALLA GIGANTE):
                   </span>
-                  <span className="text-[10px] font-mono text-f1-cyan font-bold">
-                    ACTIVO: {TRACK_BACKGROUND_OPTIONS.find(o => o.id === (gameState?.trackBackground || 'asphalt-dark'))?.name || 'Asfalto F1 Nocturno'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-f1-cyan font-bold">
+                      ACTIVO: {
+                        (gameState?.trackBackground?.startsWith('data:') || gameState?.trackBackground?.startsWith('http'))
+                          ? '🖼️ Imagen Personalizada'
+                          : (TRACK_BACKGROUND_OPTIONS.find(o => o.id === (gameState?.trackBackground || 'asphalt-dark'))?.name || 'Asfalto F1 Nocturno')
+                      }
+                    </span>
+                    {(gameState?.trackBackground?.startsWith('data:') || gameState?.trackBackground?.startsWith('http')) && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetTrackBackground('asphalt-dark')}
+                        className="px-2 py-0.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[10px] font-mono font-bold transition-all cursor-pointer"
+                        title="Restablecer fondo al asfalto F1 predeterminado"
+                      >
+                        Restablecer a Asfalto
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* 5 Presets Oficiales */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                   {TRACK_BACKGROUND_OPTIONS.map((bg) => {
                     const isActive = (gameState?.trackBackground || 'asphalt-dark') === bg.id;
@@ -540,6 +624,40 @@ export default function AdminPage() {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Carga de Imagen Local PNG / JPG y Enlace URL Externo */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-f1-dark/60 p-2.5 rounded-xl border border-f1-border/60">
+                  {/* Botón de Subida de Archivo */}
+                  <label className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-f1-cyan/15 hover:bg-f1-cyan/25 border border-f1-cyan/40 text-f1-cyan font-mono text-xs font-bold cursor-pointer transition-all flex-shrink-0">
+                    <Upload className="w-4 h-4" />
+                    <span>Subir Imagen PNG / JPG</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/jpg"
+                      onChange={handleFileUploadBg}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* Formulario de URL Externa */}
+                  <form onSubmit={handleCustomUrlBg} className="flex items-center gap-1.5 flex-1">
+                    <input
+                      type="url"
+                      placeholder="O ingresa la URL de un PNG/JPG externo (https://...)"
+                      value={customBgUrl}
+                      onChange={(e) => setCustomBgUrl(e.target.value)}
+                      className="flex-1 bg-f1-card border border-f1-border rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-f1-cyan min-w-0"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!customBgUrl.trim()}
+                      className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 border border-slate-600 text-slate-200 font-mono text-xs font-bold flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-f1-cyan" />
+                      <span>Aplicar URL</span>
+                    </button>
+                  </form>
                 </div>
               </div>
 

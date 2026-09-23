@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { useSocket } from '../../context/SocketContext';
 import TrackLane from '../../components/race/TrackLane';
 import PodiumModal from '../../components/race/PodiumModal';
@@ -39,6 +40,7 @@ function normalizeResults(raw) {
 export default function RaceScreenPage() {
   const { socket, isConnected, gameState, cloudActions } = useSocket();
   const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isNitroActive, setIsNitroActive] = useState(false);
   const [showCinematic, setShowCinematic] = useState(false);
   const [cinematicType, setCinematicType] = useState('START'); // 'START' | 'RACE_BATTLE'
@@ -51,12 +53,55 @@ export default function RaceScreenPage() {
   const [recentOvertakes, setRecentOvertakes] = useState([]);
   const [isSuspenseWait, setIsSuspenseWait] = useState(false);
   const [isCarsAdvancing, setIsCarsAdvancing] = useState(true);
+  const [isChampionshipFinale, setIsChampionshipFinale] = useState(false);
+  const [championTeam, setChampionTeam] = useState(null);
 
   useEffect(() => {
     if (socket && isConnected) {
       socket.emit('join_race_screen');
     }
   }, [socket, isConnected]);
+
+  // Audio siempre activo por defecto y detección de pantalla completa
+  useEffect(() => {
+    sounds.setMuted(false);
+
+    const checkFullscreen = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    checkFullscreen();
+    document.addEventListener('fullscreenchange', checkFullscreen);
+
+    // Intentar solicitar pantalla completa al montar
+    const tryFullscreen = async () => {
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (e) {
+        // Bloqueado por política del navegador hasta la interacción del usuario
+      }
+    };
+    tryFullscreen();
+
+    // Listener global para activar audio y pantalla completa en la primera interacción
+    const handleUserInteraction = () => {
+      sounds.ensureContext();
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    };
+
+    window.addEventListener('click', handleUserInteraction, { passive: true });
+    window.addEventListener('keydown', handleUserInteraction, { passive: true });
+
+    return () => {
+      document.removeEventListener('fullscreenchange', checkFullscreen);
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+    };
+  }, []);
 
   // Manejar sonido ambiente en reposo
   useEffect(() => {
@@ -132,6 +177,7 @@ export default function RaceScreenPage() {
       setShowPodium(false);
       setShowSolution(false);
       setShowDebrief(false);
+      setIsChampionshipFinale(false);
       setRecentOvertakes([]);
     } else {
       hasMountedRef.current = true;
@@ -205,6 +251,56 @@ export default function RaceScreenPage() {
     }, 2000);
   };
 
+  const currentSectorIndex = gameState?.currentSectorIndex || 1;
+  const totalSectors = gameState?.totalSectors || 5;
+  const trackBackground = gameState?.trackBackground || 'asphalt-dark';
+  const isCustomImageBg = trackBackground && (
+    trackBackground.startsWith('http') ||
+    trackBackground.startsWith('data:') ||
+    trackBackground.startsWith('/')
+  );
+
+  const triggerGrandFinaleCelebration = (winner) => {
+    setIsChampionshipFinale(true);
+    setChampionTeam(winner);
+    sounds.playChampionshipVictory();
+
+    // Lanzar confeti continuo estilo Gran Premio por 8 segundos
+    try {
+      const duration = 8 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: Math.random() * 0.4 + 0.1, y: Math.random() - 0.2 }
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: Math.random() * 0.4 + 0.5, y: Math.random() - 0.2 }
+        });
+      }, 350);
+    } catch (e) {
+      console.warn('Confetti launch note:', e);
+    }
+
+    // Abrir automáticamente el Podio 3D tras 4.5 segundos
+    setTimeout(() => {
+      setShowPodium(true);
+      if (cloudActions?.togglePodium) {
+        cloudActions.togglePodium(true);
+      }
+    }, 4500);
+  };
+
   const triggerTrackAnimation = (results) => {
     sounds.stopAmbientEngine();
     sounds.playRaceStart();
@@ -223,7 +319,32 @@ export default function RaceScreenPage() {
       }
     }, 1800);
 
-    return () => clearTimeout(nitroTimer);
+    // Transición automática al siguiente caso tras definirse las posiciones en pista (~5.5 segundos)
+    const autoTransitionTimer = setTimeout(async () => {
+      const currentIdx = Number(currentSectorIndex) || 1;
+      const total = Number(totalSectors) || 5;
+
+      if (currentIdx < total) {
+        // Sectores 1 a 4: Cambiar automáticamente de caso y avanzar al siguiente sector
+        const nextIdx = currentIdx + 1;
+        await cloudActions.nextSector(nextIdx, total);
+      } else {
+        // Sector 5 (Última Ronda): Los monoplazas cruzan la META final -> Gran Final del Campeonato
+        const ranking = Array.isArray(results?.ranking) ? results.ranking : Object.values(results?.ranking || {});
+        const winner = ranking[0] || TEAMS_LIST[0];
+        const winnerProf = gameState?.teamsProfiles?.[winner.teamId] || {};
+        const fullWinner = {
+          ...winner,
+          subname: winnerProf.subname || winner.subname || winner.teamName
+        };
+        triggerGrandFinaleCelebration(fullWinner);
+      }
+    }, 5500);
+
+    return () => {
+      clearTimeout(nitroTimer);
+      clearTimeout(autoTransitionTimer);
+    };
   };
 
   const handleCinematicFinish = () => {
@@ -248,9 +369,6 @@ export default function RaceScreenPage() {
     }
   };
 
-  const currentSectorIndex = gameState?.currentSectorIndex || 1;
-  const totalSectors = gameState?.totalSectors || 5;
-  const trackBackground = gameState?.trackBackground || 'asphalt-dark';
   const isRevealed = gameState?.status === 'REVEALED' || resultsData !== null;
   const isCaseActive = gameState?.status === 'ACTIVE_CASE';
   const isSafetyCarActive = gameState?.isSafetyCarActive || false;
@@ -322,6 +440,19 @@ export default function RaceScreenPage() {
 
   return (
     <div className="min-h-screen bg-carbon text-slate-100 flex flex-col justify-between p-3 md:p-6 select-none overflow-hidden relative selection:bg-f1-red selection:text-white">
+      {/* Botón flotante para pantalla completa si el navegador bloqueó la solicitud inicial */}
+      {!isFullscreen && (
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-f1-cyan/25 hover:bg-f1-cyan/40 border border-f1-cyan text-white text-[11px] font-mono font-bold px-4 py-1.5 rounded-full shadow-[0_0_20px_#00F0FF80] flex items-center gap-2 cursor-pointer animate-pulse transition-all backdrop-blur-md"
+          title="Haz clic para activar Pantalla Completa y desbloquear audio F1"
+        >
+          <Maximize className="w-3.5 h-3.5 text-f1-cyan" />
+          <span>CLIC PARA PANTALLA COMPLETA & AUDIO F1</span>
+        </button>
+      )}
+
       {/* 1. CINEMÁTICA DE VIDEO INTERCALADA (Video 1 o Video 2 de Batalla) */}
       {showCinematic && (
         <CinematicVideoModal
@@ -453,7 +584,10 @@ export default function RaceScreenPage() {
       </header>
 
       {/* PISTA DE CARRERAS: 6 CARRILES */}
-      <main className={`flex-1 my-3 flex flex-col justify-center bg-f1-card/60 rounded-2xl border border-f1-border p-2 md:p-3 overflow-hidden shadow-2xl relative track-bg-${trackBackground}`}>
+      <main
+        className={`flex-1 my-3 flex flex-col justify-center bg-f1-card/60 rounded-2xl border border-f1-border p-2 md:p-3 overflow-hidden shadow-2xl relative ${!isCustomImageBg ? `track-bg-${trackBackground}` : ''}`}
+        style={isCustomImageBg ? { backgroundImage: `url(${trackBackground})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+      >
         {TEAMS_LIST.map((team, index) => {
           const laneNum = index + 1;
           const teamsList = Array.isArray(resultsData?.teams) ? resultsData.teams : Object.values(resultsData?.teams || {});
@@ -483,6 +617,44 @@ export default function RaceScreenPage() {
           );
         })}
       </main>
+
+      {/* BANNER OFICIAL DE GRAN FINAL DE CAMPEONATO (SECTOR 5) */}
+      {isChampionshipFinale && championTeam && (
+        <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fadeIn select-none pointer-events-none">
+          <div className="max-w-2xl w-full bg-gradient-to-b from-amber-500/25 via-f1-card to-black p-8 rounded-3xl border-4 border-yellow-400 shadow-[0_0_90px_rgba(255,215,0,0.6)] space-y-5">
+            <div className="flex items-center justify-center gap-4">
+              <span className="text-4xl sm:text-5xl animate-bounce">🏁</span>
+              <Trophy className="w-16 h-16 sm:w-20 sm:h-20 text-yellow-400 animate-pulse drop-shadow-[0_0_25px_#FFD700]" />
+              <span className="text-4xl sm:text-5xl animate-bounce">🏁</span>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-xs sm:text-sm font-mono font-black text-yellow-300 tracking-widest uppercase">
+                BANDERA A CUADROS • GRAN PREMIO FINALIZADO
+              </span>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white italic uppercase tracking-tight">
+                ¡ESCUDERÍA CAMPEONA!
+              </h2>
+            </div>
+
+            <div
+              className="py-4 px-6 rounded-2xl border-2 border-white shadow-2xl inline-block max-w-full"
+              style={{ backgroundColor: championTeam.color || '#E10600' }}
+            >
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-white uppercase italic tracking-wide truncate">
+                {championTeam.subname || championTeam.teamName || `Escudería ${championTeam.teamId}`}
+              </h3>
+              <span className="text-xs sm:text-sm font-mono text-white/95 font-bold block mt-1">
+                PRIMER LUGAR (P1) • 100% DISTANCIA RECORRIDA
+              </span>
+            </div>
+
+            <p className="text-xs font-mono text-slate-300 animate-pulse pt-2">
+              🏆 Preparando ceremonia de podio en vivo...
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* MODALES Y OVERLAYS ACTIVADOS DESDE DIRECCIÓN DE CARRERA */}
       {(gameState?.showPodium || showPodium) && (resultsData || gameState?.calculatedResults) && (

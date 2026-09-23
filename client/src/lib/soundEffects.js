@@ -550,6 +550,50 @@ class SoundEngine {
   playVSCAlert() {
     this.playSafetyCarSiren();
   }
+
+  // 20. Gran Fanfarria de Campeonato F1 / Podio Triunfal
+  playChampionshipVictory() {
+    this.playAudioFile('victory-fanfare.mp3', () => {
+      this.ensureContext();
+      if (!this.ctx || this.muted) return;
+
+      try {
+        const t = this.ctx.currentTime;
+        // Acorde triunfal arpegiado (C5, E5, G5, C6)
+        const notes = [
+          { f: 523.25, time: 0, dur: 0.25 },
+          { f: 659.25, time: 0.22, dur: 0.25 },
+          { f: 783.99, time: 0.44, dur: 0.35 },
+          { f: 1046.50, time: 0.75, dur: 2.5 }
+        ];
+
+        notes.forEach(({ f, time, dur }) => {
+          const osc = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, t + time);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(f * 2.8, t + time);
+
+          gain.gain.setValueAtTime(0.001, t + time);
+          gain.gain.linearRampToValueAtTime(0.24, t + time + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + time + dur);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(t + time);
+          osc.stop(t + time + dur);
+        });
+      } catch (e) {
+        console.warn('Victory audio synthesis note:', e);
+      }
+    });
+  }
 }
 
 export const triggerHaptic = (pattern = [40, 30, 40]) => {

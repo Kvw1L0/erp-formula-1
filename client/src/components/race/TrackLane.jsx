@@ -37,6 +37,11 @@ export default function TrackLane({
   const visualLeftPercent = Math.max(1, Math.min(93, (displayPercent / 100) * 91));
 
   const teamInventedName = telemetry?.subname || team.subname;
+  const isCustomImageBg = trackBackground && (
+    trackBackground.startsWith('http') ||
+    trackBackground.startsWith('data:') ||
+    trackBackground.startsWith('/')
+  );
 
   return (
     <div className={`relative flex items-center h-16 md:h-20 min-h-[64px] md:min-h-[80px] my-1.5 bg-f1-card/90 border-y transition-all overflow-hidden ${
@@ -80,7 +85,10 @@ export default function TrackLane({
       </div>
 
       {/* Carril de Pista Central Horizontal (Extendido hasta el final) */}
-      <div className={`flex-1 relative h-full min-h-[64px] md:min-h-[80px] flex items-center px-2 overflow-hidden f1-track-bg track-bg-${trackBackground}`}>
+      <div
+        className={`flex-1 relative h-full min-h-[64px] md:min-h-[80px] flex items-center px-2 overflow-hidden f1-track-bg ${!isCustomImageBg ? `track-bg-${trackBackground}` : ''}`}
+        style={isCustomImageBg ? { backgroundImage: `url(${trackBackground})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+      >
         {/* Líneas de Sectores S1 a S4 y META en el fondo (5 sectores de 20% cada uno) */}
         <div className="absolute inset-0 flex justify-between pointer-events-none opacity-25 text-[10px] font-mono text-slate-300 px-4 items-center font-bold">
           <span>0%</span>
