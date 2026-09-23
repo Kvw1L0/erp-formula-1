@@ -79,7 +79,7 @@ export default function PodiumModal({ results, onClose }) {
                   POLE POSITION BOOST GANADOR (+20% BONIFICACIÓN)
                 </span>
                 <h4 className="text-lg font-bold text-white">
-                  {boostedTeam.teamName}
+                  {boostedTeam.subname ? `"${boostedTeam.subname}" (Escudería ${boostedTeam.teamId})` : boostedTeam.teamName}
                 </h4>
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function PodiumModal({ results, onClose }) {
                 P2
               </div>
               <span className="text-xs md:text-sm font-bold text-white block truncate max-w-full">
-                {p2.shortName}
+                {p2.subname ? `"${p2.subname}"` : p2.teamName || `Escudería ${p2.teamId}`}
               </span>
               <span className="text-[10px] text-slate-400 font-mono mt-1">
                 {p2.score} PTS • {p2.durationFormatted}
@@ -114,7 +114,7 @@ export default function PodiumModal({ results, onClose }) {
                 P1
               </div>
               <span className="text-sm md:text-base font-black text-white block truncate max-w-full">
-                {p1.shortName}
+                {p1.subname ? `"${p1.subname}"` : p1.teamName || `Escudería ${p1.teamId}`}
               </span>
               <span className="text-xs text-yellow-400 font-mono font-bold mt-1">
                 {p1.score} PTS
@@ -132,7 +132,7 @@ export default function PodiumModal({ results, onClose }) {
                 P3
               </div>
               <span className="text-xs md:text-sm font-bold text-white block truncate max-w-full">
-                {p3.shortName}
+                {p3.subname ? `"${p3.subname}"` : p3.teamName || `Escudería ${p3.teamId}`}
               </span>
               <span className="text-[10px] text-slate-400 font-mono mt-1">
                 {p3.score} PTS • {p3.durationFormatted}
@@ -141,7 +141,7 @@ export default function PodiumModal({ results, onClose }) {
           )}
         </div>
 
-        {/* Tabla Completa de las 10 Escuderías */}
+        {/* Tabla Completa de las 6 Escuderías */}
         <div className="bg-f1-dark/90 rounded-2xl border border-f1-border overflow-hidden">
           <div className="px-4 py-2.5 bg-f1-card border-b border-f1-border text-[11px] font-mono text-slate-400 flex justify-between">
             <span>POS / ESCUDERÍA</span>
@@ -156,7 +156,9 @@ export default function PodiumModal({ results, onClose }) {
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-slate-400 w-6">P{item.position}</span>
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-white font-semibold">{item.teamName}</span>
+                  <span className="text-white font-semibold">
+                    {item.subname ? `"${item.subname}" (Escudería ${item.teamId})` : item.teamName || `Escudería ${item.teamId}`}
+                  </span>
                   {item.isFastestPerfect && (
                     <span className="px-2 py-0.5 rounded bg-f1-cyan/20 text-f1-cyan text-[10px] font-bold">
                       POLE BOOST

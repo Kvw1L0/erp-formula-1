@@ -1,62 +1,57 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Play, Trophy, Users, ArrowRightLeft, Sparkles, Flame, Eye, EyeOff } from 'lucide-react';
+import { X, Play, Trophy, Users, Sparkles, Flame, Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { sounds, triggerHaptic } from '../../lib/soundEffects';
 
-const SAMPLE_PENALTIES = [
-  'Imitar el sonido de aceleración de un motor V10 de Fórmula 1 durante 5 segundos.',
-  'Explicar el concepto de "3-Way Matching" de NetSuite en 15 segundos sin trabarse.',
-  'Hacer una pose aerodinámica de monoplaza de F1 con 2 miembros de tu equipo.',
-  'Nombrar 3 transacciones contables de NetSuite antes de que pasen 5 segundos.',
-  'Bailar el festejo oficial de victoria en el podio frente al escenario.'
+const OFFICIAL_TEAMS_ROULETTE = [
+  { id: 1, name: "Escudería 1", color: "#3671C6" },
+  { id: 2, name: "Escudería 2", color: "#E80020" },
+  { id: 3, name: "Escudería 3", color: "#27F4D2" },
+  { id: 4, name: "Escudería 4", color: "#FF8000" },
+  { id: 5, name: "Escudería 5", color: "#229971" },
+  { id: 6, name: "Escudería 6", color: "#0093CC" }
+];
+
+const TEAM_CHALLENGES = [
+  'Todo el equipo debe imitar el sonido de aceleración de un motor V10 de F1 al unísono durante 5 segundos.',
+  'El equipo debe explicar el concepto de "3-Way Matching" de NetSuite en 20 segundos sin dudar.',
+  'Todo el equipo debe realizar una pose aerodinámica de monoplaza de F1 frente a la sala.',
+  'Nombrar entre todos 5 transacciones o módulos contables de NetSuite antes de que pasen 10 segundos.',
+  'Festejo oficial de podio: todo el equipo debe simular destapar una botella de champagne en el escenario.',
+  'El equipo debe entonar el himno o grito de guerra de su escudería frente a todos.',
+  'Explicar en 15 segundos cuál es la ventaja de automatizar el cierre contable con NetSuite.',
+  'Hacer una ronda rápida de aplausos estilo parada en boxes en menos de 2 segundos.'
 ];
 
 export default function RouletteModal({
   teamsProfiles = {},
   onClose,
-  onTransferParticipant,
   isGiantScreen = false,
   rouletteState = null,
   onSyncRoulette = null
 }) {
-  const [mode, setMode] = useState(rouletteState?.mode || 'TRANSFER'); // TRANSFER | PENALTY
+  const [mode, setMode] = useState(rouletteState?.mode || 'PENALTY'); // PENALTY | SUMMON
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedWinner, setSelectedWinner] = useState(rouletteState?.winner || null);
-  const [transferTargetTeam, setTransferTargetTeam] = useState(rouletteState?.transferTargetTeam || null);
   const [penaltyText, setPenaltyText] = useState(rouletteState?.penaltyText || '');
   const [rotationAngle, setRotationAngle] = useState(rouletteState?.rotationAngle || 0);
   const [isProjected, setIsProjected] = useState(rouletteState?.active || false);
 
   const prevSpinningRef = useRef(false);
 
-  // Extraer lista de participantes reales de todos los equipos
-  const participantsList = [];
-  Object.keys(teamsProfiles).forEach(teamId => {
-    const prof = teamsProfiles[teamId] || {};
-    const teamNum = Number(teamId);
-    const parts = prof.participants || [];
-    parts.forEach(name => {
-      participantsList.push({
-        name,
-        teamId: teamNum,
-        teamName: `Escudería ${teamNum}`,
-        subname: prof.subname || ''
-      });
-    });
+  // Lista de las 6 Escuderías con sus nombres inventados
+  const candidates = OFFICIAL_TEAMS_ROULETTE.map(team => {
+    const prof = teamsProfiles[team.id] || {};
+    return {
+      id: team.id,
+      teamId: team.id,
+      name: team.name,
+      color: team.color,
+      subname: prof.subname || '',
+      displayName: prof.subname ? `"${prof.subname}"` : team.name
+    };
   });
-
-  // Si no hay participantes registrados aún, rellenar con nombres de muestra
-  const candidates = participantsList.length > 0 ? participantsList : [
-    { name: 'Carlos Morales', teamId: 1, teamName: 'Escudería 1 (Red Bull)', subname: 'Toros Rápidos' },
-    { name: 'Ana Gómez', teamId: 2, teamName: 'Escudería 2 (Ferrari)', subname: 'Los Intrépidos' },
-    { name: 'Roberto Mora', teamId: 3, teamName: 'Escudería 3 (Mercedes)', subname: 'Flechas ERP' },
-    { name: 'Sofía Ruiz', teamId: 4, teamName: 'Escudería 4 (McLaren)', subname: 'Los Manglaren' },
-    { name: 'Martín Peña', teamId: 5, teamName: 'Escudería 5 (Aston Martin)', subname: 'Espías Pits' },
-    { name: 'Lucía Fernández', teamId: 6, teamName: 'Escudería 6 (Alpine)', subname: 'Fuerza Azul' },
-    { name: 'Diego Soto', teamId: 7, teamName: 'Escudería 7 (Williams)', subname: 'Tradición Pits' },
-    { name: 'Camila Pardo', teamId: 8, teamName: 'Escudería 8 (RB)', subname: 'Toros Jóvenes' }
-  ];
 
   // Si estamos en pantalla gigante, sincronizar con rouletteState
   useEffect(() => {
@@ -66,9 +61,8 @@ export default function RouletteModal({
       }
       setIsSpinning(!!rouletteState.isSpinning);
       setSelectedWinner(rouletteState.winner || null);
-      setTransferTargetTeam(rouletteState.transferTargetTeam || null);
       setPenaltyText(rouletteState.penaltyText || '');
-      setMode(rouletteState.mode || 'TRANSFER');
+      setMode(rouletteState.mode || 'PENALTY');
 
       // Detectar inicio de giro para audio
       if (rouletteState.isSpinning && !prevSpinningRef.current) {
@@ -101,8 +95,7 @@ export default function RouletteModal({
           rotationAngle,
           winner: selectedWinner,
           mode,
-          penaltyText,
-          transferTargetTeam
+          penaltyText
         });
       } else {
         onSyncRoulette(null);
@@ -117,7 +110,6 @@ export default function RouletteModal({
   const handleModeChange = (newMode) => {
     setMode(newMode);
     setSelectedWinner(null);
-    setTransferTargetTeam(null);
     setPenaltyText('');
     if (onSyncRoulette && isProjected) {
       onSyncRoulette({
@@ -126,8 +118,7 @@ export default function RouletteModal({
         rotationAngle,
         winner: null,
         mode: newMode,
-        penaltyText: '',
-        transferTargetTeam: null
+        penaltyText: ''
       });
     }
   };
@@ -137,28 +128,25 @@ export default function RouletteModal({
 
     setIsSpinning(true);
     setSelectedWinner(null);
-    setTransferTargetTeam(null);
     setPenaltyText('');
     sounds.playSelect();
 
-    // Ángulo aleatorio de 5 a 8 vueltas completas más desfase
     const winnerIndex = Math.floor(Math.random() * candidates.length);
-    const sliceAngle = 360 / candidates.length;
+    const sliceAngle = 360 / candidates.length; // 60 deg
     const extraSpins = 360 * (5 + Math.floor(Math.random() * 3));
-    const targetAngle = rotationAngle + extraSpins + (360 - (winnerIndex * sliceAngle));
+    const sliceCenter = winnerIndex * sliceAngle + (sliceAngle / 2);
+    const targetAngle = rotationAngle + extraSpins + ((360 - (rotationAngle % 360) + 360 - sliceCenter) % 360);
 
     setRotationAngle(targetAngle);
 
     // Calcular ganador
     const winner = candidates[winnerIndex];
-    let newTransferTeam = null;
     let newPenalty = '';
 
-    if (mode === 'TRANSFER') {
-      const otherTeams = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(id => id !== winner.teamId);
-      newTransferTeam = otherTeams[Math.floor(Math.random() * otherTeams.length)];
-    } else if (mode === 'PENALTY') {
-      newPenalty = SAMPLE_PENALTIES[Math.floor(Math.random() * SAMPLE_PENALTIES.length)];
+    if (mode === 'PENALTY') {
+      newPenalty = TEAM_CHALLENGES[Math.floor(Math.random() * TEAM_CHALLENGES.length)];
+    } else {
+      newPenalty = '¡La escudería seleccionada debe subir al escenario a defender su estrategia en vivo!';
     }
 
     // Sincronizar inicio de giro con Pantalla Gigante
@@ -170,7 +158,6 @@ export default function RouletteModal({
         winner: null,
         mode,
         penaltyText: '',
-        transferTargetTeam: null,
         timestamp: Date.now()
       });
     }
@@ -188,7 +175,6 @@ export default function RouletteModal({
     setTimeout(() => {
       setIsSpinning(false);
       setSelectedWinner(winner);
-      setTransferTargetTeam(newTransferTeam);
       setPenaltyText(newPenalty);
       sounds.playRouletteWinner();
       triggerHaptic([100, 50, 150]);
@@ -202,7 +188,6 @@ export default function RouletteModal({
           winner,
           mode,
           penaltyText: newPenalty,
-          transferTargetTeam: newTransferTeam,
           timestamp: Date.now()
         });
       }
@@ -215,7 +200,7 @@ export default function RouletteModal({
         {/* Botón Cerrar */}
         <button
           onClick={handleClose}
-          className="absolute top-5 right-5 w-10 h-10 rounded-full bg-f1-dark border border-f1-border text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          className="absolute top-5 right-5 w-10 h-10 rounded-full bg-f1-dark border border-f1-border text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -223,11 +208,11 @@ export default function RouletteModal({
         {/* Encabezado */}
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs uppercase mb-2">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>DIRECCIÓN DE CARRERA • DINÁMICA DE PARTICIPANTES</span>
+          <span>DIRECCIÓN DE CARRERA • DINÁMICA DE ESCUDERÍAS</span>
         </div>
 
-        <h2 className={`${isGiantScreen ? 'text-3xl md:text-4xl' : 'text-2xl'} font-black text-white italic uppercase tracking-tight mb-4`}>
-          🎡 Ruleta Oficial de Pilotos
+        <h2 className={`${isGiantScreen ? 'text-3xl md:text-5xl' : 'text-2xl'} font-black text-white italic uppercase tracking-tight mb-4`}>
+          🎡 Ruleta de Escuderías
         </h2>
 
         {/* Selector de Modo (visible en admin) */}
@@ -235,22 +220,22 @@ export default function RouletteModal({
           <div className="space-y-3 mb-6">
             <div className="flex bg-f1-dark p-1 rounded-xl border border-f1-border max-w-md mx-auto">
               <button
-                onClick={() => handleModeChange('TRANSFER')}
-                className={`flex-1 py-2 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 ${
-                  mode === 'TRANSFER' ? 'bg-f1-yellow text-black shadow' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <ArrowRightLeft className="w-3.5 h-3.5" />
-                <span>Traspaso de Piloto</span>
-              </button>
-              <button
                 onClick={() => handleModeChange('PENALTY')}
-                className={`flex-1 py-2 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   mode === 'PENALTY' ? 'bg-f1-yellow text-black shadow' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 <Flame className="w-3.5 h-3.5" />
-                <span>Penitencia de Pits</span>
+                <span>Desafío de Pits</span>
+              </button>
+              <button
+                onClick={() => handleModeChange('SUMMON')}
+                className={`flex-1 py-2 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  mode === 'SUMMON' ? 'bg-f1-yellow text-black shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>Llamado a Escenario</span>
               </button>
             </div>
 
@@ -259,7 +244,7 @@ export default function RouletteModal({
               <button
                 type="button"
                 onClick={toggleProjection}
-                className={`px-4 py-1.5 rounded-xl font-mono text-xs font-bold uppercase transition-all flex items-center gap-2 border ${
+                className={`px-4 py-1.5 rounded-xl font-mono text-xs font-bold uppercase transition-all flex items-center gap-2 border cursor-pointer ${
                   isProjected
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-emerald-500/20'
                     : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
@@ -273,36 +258,49 @@ export default function RouletteModal({
         ) : (
           <div className="mb-4">
             <span className="px-3.5 py-1 rounded-full bg-yellow-400/20 text-yellow-300 border border-yellow-400/40 text-xs font-mono font-bold uppercase">
-              MODO: {mode === 'TRANSFER' ? '🔄 TRASPASO DE PILOTO' : '🔥 PENITENCIA DE PITS'}
+              MODO: {mode === 'PENALTY' ? '🔥 DESAFÍO DE PITS' : '📢 LLAMADO A ESCENARIO'}
             </span>
           </div>
         )}
 
-        {/* Gráfico de la Ruleta F1 */}
-        <div className={`relative ${isGiantScreen ? 'w-80 h-80' : 'w-64 h-64'} mx-auto my-4 flex items-center justify-center`}>
+        {/* Gráfico de la Ruleta F1 (6 Escuderías) */}
+        <div className={`relative ${isGiantScreen ? 'w-80 h-80 md:w-96 md:h-96' : 'w-64 h-64'} mx-auto my-4 flex items-center justify-center`}>
           {/* Marcador / Flecha indicadora superior */}
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-t-[24px] border-t-yellow-400 drop-shadow-[0_2px_12px_rgba(250,204,21,0.9)]" />
 
-          {/* Disco giratorio con CSS transition */}
+          {/* Disco giratorio con CSS transition (6 sectores de 60deg con colores de las 6 Escuderías) */}
           <div
             className="w-full h-full rounded-full border-4 border-slate-700 shadow-2xl relative overflow-hidden transition-transform duration-[3500ms] cubic-bezier(0.15, 0.9, 0.2, 1)"
             style={{
               transform: `rotate(${rotationAngle}deg)`,
               background: `conic-gradient(
-                #E10600 0deg 45deg,
-                #3671C6 45deg 90deg,
-                #27F4D2 90deg 135deg,
-                #FF8000 135deg 180deg,
-                #229971 180deg 225deg,
-                #0093CC 225deg 270deg,
-                #52E252 270deg 315deg,
-                #B6BABD 315deg 360deg
+                #3671C6 0deg 60deg,
+                #E80020 60deg 120deg,
+                #27F4D2 120deg 180deg,
+                #FF8000 180deg 240deg,
+                #229971 240deg 300deg,
+                #0093CC 300deg 360deg
               )`
             }}
           >
+            {/* Números 1 a 6 impresos en cada rebanada */}
+            {[1, 2, 3, 4, 5, 6].map((num, i) => (
+              <div
+                key={num}
+                className="absolute inset-0 flex items-start justify-center pt-3 text-white font-mono font-black text-sm md:text-base drop-shadow-md select-none pointer-events-none"
+                style={{
+                  transform: `rotate(${i * 60 + 30}deg)`,
+                  transformOrigin: '50% 50%'
+                }}
+              >
+                {num}
+              </div>
+            ))}
+
             {/* Eje central */}
-            <div className={`absolute inset-0 m-auto ${isGiantScreen ? 'w-20 h-20 text-sm' : 'w-16 h-16 text-xs'} rounded-full bg-slate-950 border-4 border-yellow-400 flex items-center justify-center text-yellow-400 font-mono font-black shadow-inner`}>
-              F1 PITS
+            <div className={`absolute inset-0 m-auto ${isGiantScreen ? 'w-24 h-24 text-base' : 'w-18 h-18 text-xs'} rounded-full bg-slate-950 border-4 border-yellow-400 flex flex-col items-center justify-center text-yellow-400 font-mono font-black shadow-inner z-10`}>
+              <span>F1</span>
+              <span className="text-[10px] text-slate-300">PITS</span>
             </div>
           </div>
         </div>
@@ -324,36 +322,47 @@ export default function RouletteModal({
 
         {/* Resultado Ganador */}
         {selectedWinner && (
-          <div className={`mt-4 p-5 md:p-6 bg-f1-dark/95 rounded-2xl border-2 border-yellow-400/80 text-center space-y-3 animate-scale-in ${isGiantScreen ? 'max-w-2xl mx-auto' : ''}`}>
-            <span className="text-xs font-mono uppercase tracking-widest text-yellow-400 font-black block">
-              🏆 PARTICIPANTE SELECCIONADO
-            </span>
-            <h3 className={`${isGiantScreen ? 'text-3xl md:text-4xl' : 'text-xl md:text-2xl'} font-black text-white italic uppercase`}>
-              {selectedWinner.name}
-            </h3>
-            <p className="text-xs md:text-sm font-mono text-slate-300">
-              Pertenece a: <span className="text-white font-bold">{selectedWinner.teamName}</span>
-              {selectedWinner.subname && ` ("${selectedWinner.subname}")`}
-            </p>
+          <div
+            className={`mt-4 p-5 md:p-6 bg-f1-dark/95 rounded-2xl border-2 text-center space-y-3 animate-scale-in ${isGiantScreen ? 'max-w-2xl mx-auto' : ''}`}
+            style={{ borderColor: selectedWinner.color || '#EAB308' }}
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full font-mono text-xs font-bold uppercase"
+              style={{ backgroundColor: `${selectedWinner.color}25`, color: selectedWinner.color }}
+            >
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedWinner.color }} />
+              <span>ESCUDERÍA {selectedWinner.id} SELECCIONADA</span>
+            </div>
 
-            {mode === 'TRANSFER' && transferTargetTeam && (
-              <div className="p-3.5 bg-f1-cyan/15 border border-f1-cyan/40 rounded-xl text-f1-cyan font-mono text-sm font-bold flex items-center justify-center gap-2">
-                <ArrowRightLeft className="w-5 h-5 flex-shrink-0" />
-                <span>¡TRASPASO CONFIRMADO! Pasa a integrarse a la Escudería #{transferTargetTeam}</span>
-              </div>
+            <h3 className={`${isGiantScreen ? 'text-4xl md:text-5xl' : 'text-2xl md:text-3xl'} font-black text-white italic uppercase tracking-tight`}>
+              {selectedWinner.subname ? `"${selectedWinner.subname}"` : selectedWinner.name}
+            </h3>
+
+            {selectedWinner.subname && (
+              <p className="text-xs md:text-sm font-mono text-slate-400">
+                Identificación de Pista: <span className="text-white font-bold">{selectedWinner.name}</span>
+              </p>
             )}
 
-            {mode === 'PENALTY' && penaltyText && (
-              <div className="p-4 bg-rose-500/15 border border-rose-500/40 rounded-xl text-rose-300 font-mono text-sm md:text-base font-bold">
-                ⚠️ PENITENCIA DE PITS: &ldquo;{penaltyText}&rdquo;
+            {penaltyText && (
+              <div
+                className={`p-4 rounded-xl font-mono text-sm md:text-base font-bold ${
+                  mode === 'PENALTY'
+                    ? 'bg-rose-500/15 border border-rose-500/40 text-rose-300'
+                    : 'bg-amber-500/15 border border-amber-500/40 text-amber-300'
+                }`}
+              >
+                {mode === 'PENALTY' ? '⚠️ DESAFÍO EN VIVO: ' : '📢 DINÁMICA: '}
+                &ldquo;{penaltyText}&rdquo;
               </div>
             )}
           </div>
         )}
 
-        <p className="text-[11px] font-mono text-slate-500 mt-4">
-          Nómina actual cargada: {candidates.length} participantes registrados.
-        </p>
+        <div className="flex items-center justify-center gap-3 mt-4 text-[11px] font-mono text-slate-500">
+          <span>6 Escuderías en Pista</span>
+          <span>•</span>
+          <span>Sincronizado en Tiempo Real</span>
+        </div>
       </div>
     </div>
   );

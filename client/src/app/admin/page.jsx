@@ -730,10 +730,7 @@ export default function AdminPage() {
 
   const selectedCase = cases.find(c => c.id === selectedCaseId) || cases[0];
   const teamsProfiles = gameState?.teamsProfiles || {};
-  const totalEnrolledParticipants = Object.values(teamsProfiles).reduce((acc, t) => {
-    return acc + (Array.isArray(t?.participants) ? t.participants.length : 0);
-  }, 0);
-  const enrolledTeamsCount = Object.values(teamsProfiles).filter(t => (t?.participants?.length || 0) > 0).length;
+  const enrolledTeamsCount = Object.values(teamsProfiles).filter(t => Boolean(t?.subname || (t?.participants?.length || 0) > 0)).length;
 
   const handleStartCase = async () => {
     setIsLoading(true);
@@ -840,14 +837,14 @@ export default function AdminPage() {
     const res = await cloudActions.simulate10Teams(selectedCase, currentSector, totalSectors);
     setIsLoading(false);
     if (res?.success) {
-      setNotification('🏎️ Simulación de 10 Escuderías en vivo ejecutada.');
+      setNotification('🏎️ Simulación de 6 Escuderías en vivo ejecutada.');
       setTimeout(() => setNotification(''), 4000);
     }
   };
 
   // Hard Reset de máxima seguridad (Foja Cero)
   const handleHardReset = async () => {
-    const confirmed = confirm('⚠️ ¿ESTÁS SEGURO DE EJECUTAR UN RESET TOTAL?\n\nEsta acción:\n- EXPULSARÁ a TODAS las tablets conectadas a la pantalla inicial de PIN.\n- BORRARÁ las sesiones de los participantes y nóminas.\n- REINICIARÁ el campeonato y los 10 monoplazas al 0% (foja cero).\n- Limpiará todas las alertas de carrera.');
+    const confirmed = confirm('⚠️ ¿ESTÁS SEGURO DE EJECUTAR UN RESET TOTAL?\n\nEsta acción:\n- EXPULSARÁ a TODAS las tablets conectadas a la pantalla inicial de PIN.\n- BORRARÁ las sesiones de los participantes.\n- REINICIARÁ el campeonato y los 6 monoplazas al 0% (foja cero).\n- Limpiará todas las alertas de carrera.');
     if (!confirmed) return;
 
     const secondCheck = confirm('Última confirmación: ¿Proceder con el HARD RESET TOTAL?');
@@ -896,8 +893,8 @@ export default function AdminPage() {
                   </span>
                 )}
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
-                  <Users className="w-3 h-3 text-emerald-400" />
-                  <span>{totalEnrolledParticipants} PILOTOS ({enrolledTeamsCount}/10 ESCUDERÍAS)</span>
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  <span>{enrolledTeamsCount} / 6 ESCUDERÍAS CONECTADAS</span>
                 </span>
                 {isRedFlagActive && (
                   <span className="px-2.5 py-0.5 rounded-full bg-red-600 text-white font-mono text-[10px] font-black uppercase flex items-center gap-1 animate-pulse">
@@ -1072,7 +1069,7 @@ export default function AdminPage() {
                     <span className="text-[9px] opacity-60 font-normal">Conserva kilometraje acumulado</span>
                   </button>
 
-                  {/* 4. Simulación 10 Escuderías */}
+                  {/* 4. Simulación 6 Escuderías */}
                   <button
                     type="button"
                     onClick={handleSimulate10Teams}
@@ -1080,7 +1077,7 @@ export default function AdminPage() {
                     className="p-4 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-500 text-white font-mono font-bold text-xs uppercase flex flex-col items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-600/25 active:scale-95 border border-purple-400/30"
                   >
                     <Users className="w-5 h-5 fill-current" />
-                    <span>🏎️ SIMULAR 10 EQUIPOS</span>
+                    <span>🏎️ SIMULAR 6 ESCUDERÍAS</span>
                     <span className="text-[9px] opacity-85 font-normal">Demo instantánea de carrera</span>
                   </button>
                 </div>
@@ -1140,7 +1137,7 @@ export default function AdminPage() {
                     <span>{gameState?.showPodium ? 'Ocultar Podio' : '🏆 Mostrar Podio'}</span>
                   </button>
 
-                  {/* 4. Ruleta de Pilotos en Pantalla Gigante */}
+                  {/* 4. Ruleta de Escuderías en Pantalla Gigante */}
                   <button
                     type="button"
                     onClick={() => setShowRoulette(true)}
@@ -1148,7 +1145,7 @@ export default function AdminPage() {
                     title="Abrir ruleta interactiva sincronizada para la pantalla gigante"
                   >
                     <span className="text-base">🎡</span>
-                    <span>Ruleta Pilotos</span>
+                    <span>Ruleta Escuderías</span>
                   </button>
 
                   {/* 5. Bandera Roja Toggle */}
@@ -1201,11 +1198,10 @@ export default function AdminPage() {
                     >
                       {OFFICIAL_TEAMS.map(t => {
                         const prof = teamsProfiles[t.id] || {};
-                        const sub = prof.subname ? ` ("${prof.subname}")` : '';
-                        const partsCount = (prof.participants || []).length;
+                        const teamLabel = prof.subname ? `"${prof.subname}" (Escudería ${t.id})` : `Escudería ${t.id}`;
                         return (
                           <option key={t.id} value={t.id}>
-                            #{t.id} {t.name}{sub} {partsCount > 0 ? `• ${partsCount} pilotos` : ''}
+                            #{t.id} {teamLabel}
                           </option>
                         );
                       })}
@@ -1291,10 +1287,8 @@ export default function AdminPage() {
               teamsList={OFFICIAL_TEAMS.map(t => ({
                 id: t.id,
                 name: t.name,
-                shortName: t.shortName,
                 color: t.color,
-                subname: teamsProfiles[t.id]?.subname || '',
-                participants: teamsProfiles[t.id]?.participants || []
+                subname: teamsProfiles[t.id]?.subname || ''
               }))}
             />
           </div>

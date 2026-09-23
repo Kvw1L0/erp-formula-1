@@ -2,16 +2,12 @@ import { ref, set, get, update, onValue } from 'firebase/database';
 import { getFirebaseDb } from './firebase';
 
 export const TEAMS_LIST = [
-  { id: 1, name: "Escudería 1 - Red Bull Racing", color: "#3671C6", shortName: "EQ 01" },
-  { id: 2, name: "Escudería 2 - Scuderia Ferrari", color: "#E80020", shortName: "EQ 02" },
-  { id: 3, name: "Escudería 3 - Mercedes-AMG Petronas", color: "#27F4D2", shortName: "EQ 03" },
-  { id: 4, name: "Escudería 4 - McLaren F1 Team", color: "#FF8000", shortName: "EQ 04" },
-  { id: 5, name: "Escudería 5 - Aston Martin Aramco", color: "#229971", shortName: "EQ 05" },
-  { id: 6, name: "Escudería 6 - Alpine F1 Team", color: "#0093CC", shortName: "EQ 06" },
-  { id: 7, name: "Escudería 7 - Williams Racing", color: "#64C4FF", shortName: "EQ 07" },
-  { id: 8, name: "Escudería 8 - Visa Cash App RB", color: "#6692FF", shortName: "EQ 08" },
-  { id: 9, name: "Escudería 9 - Stake F1 Kick Sauber", color: "#52E252", shortName: "EQ 09" },
-  { id: 10, name: "Escudería 10 - Haas F1 Team", color: "#B6BABD", shortName: "EQ 10" }
+  { id: 1, name: "Escudería 1", color: "#3671C6" },
+  { id: 2, name: "Escudería 2", color: "#E80020" },
+  { id: 3, name: "Escudería 3", color: "#27F4D2" },
+  { id: 4, name: "Escudería 4", color: "#FF8000" },
+  { id: 5, name: "Escudería 5", color: "#229971" },
+  { id: 6, name: "Escudería 6", color: "#0093CC" }
 ];
 
 class FirebaseRaceEngine {
@@ -138,8 +134,7 @@ class FirebaseRaceEngine {
 
     const submissionData = {
       teamId: numTeamId,
-      teamName: team?.name || `Equipo ${numTeamId}`,
-      shortName: team?.shortName || `EQ ${numTeamId}`,
+      teamName: team?.name || `Escudería ${numTeamId}`,
       color: team?.color || '#E10600',
       score: totalScore,
       durationMs,
@@ -174,7 +169,7 @@ class FirebaseRaceEngine {
       if (!currentSubs[team.id]) {
         const simAnswers = {};
         // Simulación variada: algunos perfectos, algunos con pequeños errores
-        const isPerfect = team.id === 1 || team.id === 4 || team.id === 8 || Math.random() > 0.45;
+        const isPerfect = team.id === 1 || team.id === 4 || team.id === 6 || Math.random() > 0.45;
         const durationMs = Math.round((7 + Math.random() * 20) * 1000);
 
         steps.forEach(s => {
@@ -193,6 +188,15 @@ class FirebaseRaceEngine {
 
     // Calcular y revelar resultados
     return await this.calculateAndRevealResults(currentCase, currentSectorIndex, totalSectors);
+  }
+
+  // Alias para simulación de escuderías
+  async simulate10Teams(currentCase, currentSectorIndex = 1, totalSectors = 10) {
+    return await this.autoFinish(currentCase, currentSectorIndex, totalSectors);
+  }
+
+  async simulateTeams(currentCase, currentSectorIndex = 1, totalSectors = 10) {
+    return await this.autoFinish(currentCase, currentSectorIndex, totalSectors);
   }
 
   // 6. Calcular resultados de la ronda, Pole Position Boost (+20%) y DRS (+10% en P8-P10)
@@ -228,7 +232,6 @@ class FirebaseRaceEngine {
         return {
           teamId: team.id,
           teamName: team.name,
-          shortName: team.shortName,
           color: team.color,
           hasSubmitted: true,
           caseScore: sub.score,
@@ -247,7 +250,6 @@ class FirebaseRaceEngine {
         return {
           teamId: team.id,
           teamName: team.name,
-          shortName: team.shortName,
           color: team.color,
           hasSubmitted: false,
           caseScore: 0,
@@ -276,7 +278,7 @@ class FirebaseRaceEngine {
     // Aplicar cálculos de avance, Pole Boost y DRS Boost
     roundResults.forEach(item => {
       const accuracyRatio = item.caseScore / maxPossibleScore;
-      const isEligibleForDRS = item.previousPosition >= 8 && item.isPerfect && item.teamId !== fastestPerfectTeamId;
+      const isEligibleForDRS = item.previousPosition >= 5 && item.isPerfect && item.teamId !== fastestPerfectTeamId;
 
       if (fastestPerfectTeamId && item.teamId === fastestPerfectTeamId) {
         item.isFastestPerfect = true;
@@ -320,7 +322,6 @@ class FirebaseRaceEngine {
       newTelemetry[item.teamId] = {
         teamId: item.teamId,
         teamName: item.teamName,
-        shortName: item.shortName,
         color: item.color,
         cumulativeScore: item.cumulativeScore,
         previousDistance: item.previousDistance,
@@ -426,7 +427,6 @@ class FirebaseRaceEngine {
       initialTelemetry[t.id] = {
         teamId: t.id,
         teamName: t.name,
-        shortName: t.shortName,
         color: t.color,
         cumulativeScore: 0,
         previousDistance: 0,
@@ -497,7 +497,6 @@ class FirebaseRaceEngine {
         teamName: t.name,
         subname: '',
         participants: [],
-        shortName: t.shortName,
         color: t.color,
         cumulativeScore: 0,
         previousDistance: 0,
@@ -542,20 +541,6 @@ class FirebaseRaceEngine {
         await update(ref(this.db, 'f1_race/state'), { status: 'LOBBY' });
       } catch (e) {}
     }, 1500);
-  }
-
-  // 11b. Actualizar perfil de equipo (subnombre y participantes/pilotos)
-  async updateTeamProfile(teamId, subname, participants) {
-    this.init();
-    if (!this.db) return;
-
-    const numId = Number(teamId);
-    await set(ref(this.db, `f1_race/teams/${numId}`), {
-      teamId: numId,
-      subname: String(subname || '').trim(),
-      participants: Array.isArray(participants) ? participants : [],
-      updatedAt: Date.now()
-    });
   }
 
   // 12. Convocatoria a Escenario (Disparador de Eventos)

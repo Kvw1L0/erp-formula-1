@@ -17,16 +17,12 @@ import { sounds } from '../../lib/soundEffects';
 import { Flag, Zap, Volume2, VolumeX, Maximize, Trophy, Clock, Users, Compass, BookOpen, Film, AlertTriangle, TrendingUp, FastForward, AlertOctagon, CloudRain, ShieldAlert, QrCode, FileSpreadsheet } from 'lucide-react';
 
 const TEAMS_LIST = [
-  { id: 1, name: "Escudería 1 - Red Bull Racing", color: "#3671C6", shortName: "EQ 01" },
-  { id: 2, name: "Escudería 2 - Scuderia Ferrari", color: "#E80020", shortName: "EQ 02" },
-  { id: 3, name: "Escudería 3 - Mercedes-AMG Petronas", color: "#27F4D2", shortName: "EQ 03" },
-  { id: 4, name: "Escudería 4 - McLaren F1 Team", color: "#FF8000", shortName: "EQ 04" },
-  { id: 5, name: "Escudería 5 - Aston Martin Aramco", color: "#229971", shortName: "EQ 05" },
-  { id: 6, name: "Escudería 6 - Alpine F1 Team", color: "#0093CC", shortName: "EQ 06" },
-  { id: 7, name: "Escudería 7 - Williams Racing", color: "#64C4FF", shortName: "EQ 07" },
-  { id: 8, name: "Escudería 8 - Visa Cash App RB", color: "#6692FF", shortName: "EQ 08" },
-  { id: 9, name: "Escudería 9 - Stake F1 Kick Sauber", color: "#52E252", shortName: "EQ 09" },
-  { id: 10, name: "Escudería 10 - Haas F1 Team", color: "#B6BABD", shortName: "EQ 10" }
+  { id: 1, name: "Escudería 1", color: "#3671C6" },
+  { id: 2, name: "Escudería 2", color: "#E80020" },
+  { id: 3, name: "Escudería 3", color: "#27F4D2" },
+  { id: 4, name: "Escudería 4", color: "#FF8000" },
+  { id: 5, name: "Escudería 5", color: "#229971" },
+  { id: 6, name: "Escudería 6", color: "#0093CC" }
 ];
 
 function normalizeResults(raw) {
@@ -109,13 +105,16 @@ export default function RaceScreenPage() {
           const overtakes = results.ranking
             .filter(r => r && r.positionDelta > 0)
             .sort((a, b) => b.positionDelta - a.positionDelta)
-            .map(r => ({
-              teamId: r.teamId,
-              teamName: r.shortName || r.teamName,
-              color: r.color,
-              newPos: r.currentPosition,
-              delta: r.positionDelta
-            }));
+            .map(r => {
+              const prof = gameState?.teamsProfiles?.[r.teamId] || {};
+              return {
+                teamId: r.teamId,
+                teamName: prof.subname ? `"${prof.subname}"` : (r.teamName || `Escudería ${r.teamId}`),
+                color: r.color,
+                newPos: r.currentPosition,
+                delta: r.positionDelta
+              };
+            });
           setRecentOvertakes(overtakes);
         }
 
@@ -154,13 +153,16 @@ export default function RaceScreenPage() {
         const overtakes = results.ranking
           .filter(r => r && r.positionDelta > 0)
           .sort((a, b) => b.positionDelta - a.positionDelta)
-          .map(r => ({
-            teamId: r.teamId,
-            teamName: r.shortName || r.teamName,
-            color: r.color,
-            newPos: r.currentPosition,
-            delta: r.positionDelta
-          }));
+          .map(r => {
+            const prof = gameState?.teamsProfiles?.[r.teamId] || {};
+            return {
+              teamId: r.teamId,
+              teamName: prof.subname ? `"${prof.subname}"` : (r.teamName || `Escudería ${r.teamId}`),
+              color: r.color,
+              newPos: r.currentPosition,
+              delta: r.positionDelta
+            };
+          });
         setRecentOvertakes(overtakes);
       }
 
@@ -479,22 +481,6 @@ export default function RaceScreenPage() {
           );
         })}
       </main>
-
-      {/* Footer con Indicadores F1 */}
-      <footer className="flex items-center justify-between bg-f1-card px-4 py-2 rounded-xl border border-f1-border text-[11px] font-mono text-slate-400">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-f1-green animate-ping" />
-            <span>TELEMETRÍA EN TIEMPO REAL ACTIVA</span>
-          </span>
-          <span className="hidden sm:inline text-slate-600">|</span>
-          <span className="hidden sm:inline">CIRCUITO: 10 SECTORES • POLE NITRO (+20%) • DRS (+10%) • SUPER BOOST (+15%)</span>
-        </div>
-
-        <div>
-          VELTIS RACING • GRAND PRIX ERP
-        </div>
-      </footer>
 
       {/* MODALES Y OVERLAYS ACTIVADOS DESDE DIRECCIÓN DE CARRERA */}
       {(gameState?.showPodium || showPodium) && (resultsData || gameState?.calculatedResults) && (

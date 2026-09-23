@@ -246,6 +246,21 @@ export function SocketProvider({ children }) {
       return { success: true, results };
     },
 
+    simulateTeams: async (currentCase, sectorIndex, totalSectors) => {
+      if (isFirebaseConfigured()) {
+        const results = await firebaseRaceEngine.simulateTeams(currentCase, sectorIndex, totalSectors);
+        return { success: true, results };
+      }
+      const results = await firebaseRaceEngine.simulateTeams(currentCase, sectorIndex, totalSectors);
+      setGameState(prev => ({
+        ...prev,
+        status: 'REVEALED',
+        calculatedResults: results
+      }));
+      socket?.emit('admin_simulate_10_teams', { results });
+      return { success: true, results };
+    },
+
     updateTeamProfile: async (teamId, subname, participants) => {
       if (isFirebaseConfigured()) {
         await firebaseRaceEngine.updateTeamProfile(teamId, subname, participants);

@@ -6,7 +6,6 @@ import PinLogin from '../../components/participant/PinLogin';
 import CountdownBar from '../../components/participant/CountdownBar';
 import CaseFlow from '../../components/participant/CaseFlow';
 import PitsBlocked from '../../components/participant/PitsBlocked';
-import SuperBoostMinigame from '../../components/participant/SuperBoostMinigame';
 import TeamEventOverlay from '../../components/race/TeamEventOverlay';
 import { Flag, Activity, Wifi, WifiOff, Clock, Compass, Zap, ShieldAlert, Radio, AlertOctagon, CloudRain, Users, CheckCircle2 } from 'lucide-react';
 import { sounds, triggerHaptic } from '../../lib/soundEffects';
@@ -18,8 +17,6 @@ export default function ParticipantPage() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [submissionTimeFormatted, setSubmissionTimeFormatted] = useState(null);
   const [currentPosition, setCurrentPosition] = useState(null);
-  const [showSuperBoostModal, setShowSuperBoostModal] = useState(false);
-  const [superBoostUnlocked, setSuperBoostUnlocked] = useState(false);
   const [hasAcknowledgedSummon, setHasAcknowledgedSummon] = useState(false);
   const lastSummonTimestampRef = useRef(null);
 
@@ -45,8 +42,6 @@ export default function ParticipantPage() {
       setTeam(null);
       setHasSubmitted(false);
       setSubmissionTimeFormatted(null);
-      setShowSuperBoostModal(false);
-      setSuperBoostUnlocked(false);
       setHasAcknowledgedSummon(false);
       triggerHaptic([100, 50, 100]);
     }
@@ -192,13 +187,6 @@ export default function ParticipantPage() {
     setHasSubmitted(false);
   };
 
-  const handleSuperBoostSuccess = async (timeMs) => {
-    setShowSuperBoostModal(false);
-    setSuperBoostUnlocked(false);
-    sounds.playNitroBoost();
-    await cloudActions.activateSuperBoost(team.id, true);
-  };
-
   if (!team) {
     return (
       <div className="min-h-screen bg-carbon flex flex-col justify-center items-center p-4">
@@ -290,61 +278,28 @@ export default function ParticipantPage() {
         />
       )}
 
-      {/* Header del Participante con Subnombre y Pilotos */}
-      <header className="max-w-4xl mx-auto w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-f1-border">
+      {/* Header del Participante con Número de Escudería y Nombre Inventado */}
+      <header className="max-w-4xl mx-auto w-full flex items-center justify-between gap-4 pb-4 border-b border-f1-border">
         <div className="flex items-center gap-3">
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center font-mono font-black text-white shadow-xl flex-shrink-0"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center font-mono font-black text-xl text-white shadow-xl flex-shrink-0"
             style={{ backgroundColor: team.color || '#E10600' }}
           >
-            {team.shortName || `E${team.id}`}
+            {team.id}
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg md:text-xl font-black text-white leading-tight">
-                {team.name}
-              </h1>
-              {team.subname && (
-                <span className="px-2.5 py-0.5 rounded-full bg-f1-yellow/15 border border-f1-yellow/40 text-f1-yellow font-mono text-[11px] font-bold">
-                  {team.subname}
-                </span>
-              )}
-              {isWetRace && (
-                <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-mono text-[10px] font-bold flex items-center gap-1">
-                  <CloudRain className="w-3 h-3" /> PISTA MOJADA
-                </span>
-              )}
-            </div>
-
-            {/* Nómina de Pilotos */}
-            <div className="flex items-center gap-1.5 flex-wrap mt-1">
-              <span className="text-[10px] font-mono text-slate-500">PILOTOS:</span>
-              {(team.participants && team.participants.length > 0 ? team.participants : [`Piloto ${team.id}`]).map((p, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded-md bg-f1-dark border border-f1-border text-slate-300 text-[10px] font-mono"
-                >
-                  {p}
-                </span>
-              ))}
-            </div>
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block font-bold">
+              ESCUDERÍA {team.id}
+            </span>
+            <h1 className="text-lg md:text-xl font-black text-white leading-tight">
+              {team.subname || team.name}
+            </h1>
           </div>
         </div>
 
-        {/* Estado y Botón de Super Boost */}
-        <div className="flex items-center gap-2.5 self-end md:self-auto font-mono text-xs">
-          {/* Botón Minijuego Super Boost */}
-          <button
-            type="button"
-            onClick={() => setShowSuperBoostModal(true)}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-500 text-white font-mono font-black text-xs uppercase flex items-center gap-1.5 shadow-lg shadow-purple-600/30 active:scale-95 transition-all border border-purple-400/40"
-            title="Activa el minijuego de reflejos para ganar +15% de aceleración extra"
-          >
-            <Zap className="w-4 h-4 fill-current animate-pulse text-yellow-300" />
-            <span>SUPER BOOST (+15%)</span>
-          </button>
-
-          <div className="px-3 py-2 bg-f1-dark rounded-xl border border-f1-border text-slate-400">
+        {/* Estado Conexión */}
+        <div className="flex items-center gap-2.5 font-mono text-xs">
+          <div className="px-3 py-1.5 bg-f1-dark rounded-xl border border-f1-border text-slate-400">
             {isConnected ? (
               <span className="flex items-center gap-1.5 text-f1-green font-bold text-[11px]">
                 <Wifi className="w-3.5 h-3.5" /> <span className="hidden sm:inline">ONLINE</span>
@@ -357,15 +312,6 @@ export default function ParticipantPage() {
           </div>
         </div>
       </header>
-
-      {/* Modal de Minijuego de Super Boost */}
-      {showSuperBoostModal && (
-        <SuperBoostMinigame
-          team={team}
-          onSuccess={handleSuperBoostSuccess}
-          onCancel={() => setShowSuperBoostModal(false)}
-        />
-      )}
 
       {/* Cuerpo Principal */}
       <main className="my-auto py-6 max-w-4xl mx-auto w-full flex flex-col justify-center">
@@ -384,66 +330,37 @@ export default function ParticipantPage() {
             isSubmitting={isSubmitting}
           />
         ) : (
-          <div className="max-w-md mx-auto w-full bg-f1-card p-8 rounded-3xl border border-f1-border text-center shadow-2xl">
-            <div className="w-16 h-16 bg-f1-dark border border-f1-cyan/40 rounded-2xl flex items-center justify-center mx-auto mb-5 text-f1-cyan shadow-lg shadow-f1-cyan/10 animate-pulse">
+          <div className="max-w-sm mx-auto w-full bg-f1-card p-6 md:p-8 rounded-3xl border border-f1-border text-center shadow-2xl space-y-5">
+            <div className="w-16 h-16 bg-f1-dark border border-f1-cyan/40 rounded-2xl flex items-center justify-center mx-auto text-f1-cyan shadow-lg shadow-f1-cyan/10 animate-pulse">
               <Clock className="w-8 h-8" />
             </div>
             
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-f1-yellow/10 border border-f1-yellow/30 text-xs font-mono text-f1-yellow font-bold mb-3">
-              <Compass className="w-3.5 h-3.5" />
-              <span>PREPARANDO SECTOR {sectorIndex} / {totalSectors}</span>
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                Escudería Lista
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Esperando inicio de carrera...
+              </p>
             </div>
 
-            <h2 className="text-xl font-bold text-white mb-2">
-              Terminal en Boxes Lista
-            </h2>
-            
-            <p className="text-xs text-slate-400 leading-relaxed font-sans mb-5">
-              Tu monoplaza está listo en Pits. En cuanto Dirección de Carrera presione <strong className="text-f1-green">Iniciar Ronda</strong>, esta pantalla se activará automáticamente con el caso práctico para responder.
-            </p>
-
-            {/* Resumen del Equipo */}
-            <div className="p-3.5 bg-f1-dark/90 rounded-2xl border border-f1-border text-left mb-5 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-slate-400 uppercase">ESCUDERÍA OFICIAL:</span>
-                <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: team.color || '#E10600' }} />
-                  {team.name}
-                </span>
+            {/* Resumen Simple del Equipo */}
+            <div className="p-4 bg-f1-dark/90 rounded-2xl border border-f1-border text-center space-y-1">
+              <div className="w-9 h-9 rounded-xl font-mono font-black text-base text-white flex items-center justify-center mx-auto shadow" style={{ backgroundColor: team.color || '#E10600' }}>
+                {team.id}
               </div>
-              {team.subname && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase">SUBNOMBRE:</span>
-                  <span className="text-xs font-mono font-bold text-f1-yellow">
-                    &ldquo;{team.subname}&rdquo;
-                  </span>
-                </div>
-              )}
-              {team.participants && team.participants.length > 0 && (
-                <div className="pt-1 border-t border-f1-border/40">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase block mb-1">PILOTOS EN BOXES:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {team.participants.map((p, i) => (
-                      <span key={i} className="px-2 py-0.5 rounded bg-white/5 border border-f1-border text-[10px] font-mono text-slate-300">
-                        {p}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-2.5 bg-cyan-950/30 rounded-xl border border-cyan-500/30 text-xs font-mono text-cyan-300 flex items-center justify-center gap-2 mb-4">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-              <span>TERMINAL SINCRONIZADA • ESPERANDO SEÑAL VERDE</span>
+              <span className="text-xs font-mono text-slate-400 block uppercase">Escudería {team.id}</span>
+              <span className="text-base font-black text-white block">
+                {team.subname || team.name}
+              </span>
             </div>
 
             <button
               type="button"
               onClick={handleLeaveTeam}
-              className="text-[11px] font-mono text-slate-500 hover:text-red-400 transition-colors underline cursor-pointer"
+              className="text-xs font-mono text-slate-400 hover:text-red-400 transition-colors underline cursor-pointer block mx-auto pt-2"
             >
-              ← Cambiar de Escudería o editar integrantes
+              ← Cambiar de Escudería
             </button>
           </div>
         )}
