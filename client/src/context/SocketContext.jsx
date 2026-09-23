@@ -16,7 +16,8 @@ export function SocketProvider({ children }) {
   const [gameState, setGameState] = useState({
     status: 'LOBBY',
     currentSectorIndex: 1,
-    totalSectors: 10,
+    totalSectors: 5,
+    trackBackground: 'asphalt-dark',
     currentCase: null,
     startTime: null,
     durationLimitSeconds: 60,
@@ -433,6 +434,16 @@ export function SocketProvider({ children }) {
       }
       setGameState(prev => ({ ...prev, roulette: rouletteData }));
       socket?.emit('admin_set_roulette', { rouletteData });
+      return { success: true };
+    },
+
+    setTrackBackground: async (backgroundPreset = 'asphalt-dark') => {
+      if (isFirebaseConfigured()) {
+        await firebaseRaceEngine.setTrackBackground(backgroundPreset);
+        return { success: true };
+      }
+      setGameState(prev => ({ ...prev, trackBackground: backgroundPreset }));
+      socket?.emit('admin_set_track_background', { backgroundPreset });
       return { success: true };
     }
   };

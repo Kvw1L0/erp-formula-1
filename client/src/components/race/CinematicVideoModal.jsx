@@ -50,7 +50,7 @@ export const DEFAULT_BATTLE_THEMES = {
 export default function CinematicVideoModal({
   videoType = 'START', // 'START' (Video 1 Arranque) | 'RACE_BATTLE' (Video 2 Batalla de Sector)
   sectorIndex = 1,
-  totalSectors = 10,
+  totalSectors = 5,
   videoUrl = null,
   battleTitle = null,
   battleDescription = null,

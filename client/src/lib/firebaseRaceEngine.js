@@ -83,7 +83,7 @@ class FirebaseRaceEngine {
   }
 
   // 3. Iniciar un caso / Sector
-  async startCase(caseData, sectorIndex = 1, totalSectors = 10) {
+  async startCase(caseData, sectorIndex = 1, totalSectors = 5) {
     this.init();
     if (!this.db) return;
 
@@ -157,7 +157,7 @@ class FirebaseRaceEngine {
   }
 
   // 5. Finalizar automáticamente y calcular resultados (Botón Auto / Demo)
-  async autoFinish(currentCase, currentSectorIndex = 1, totalSectors = 10) {
+  async autoFinish(currentCase, currentSectorIndex = 1, totalSectors = 5) {
     this.init();
     if (!this.db) return;
     const steps = currentCase?.steps || [];
@@ -191,16 +191,16 @@ class FirebaseRaceEngine {
   }
 
   // Alias para simulación de escuderías
-  async simulate10Teams(currentCase, currentSectorIndex = 1, totalSectors = 10) {
+  async simulate10Teams(currentCase, currentSectorIndex = 1, totalSectors = 5) {
     return await this.autoFinish(currentCase, currentSectorIndex, totalSectors);
   }
 
-  async simulateTeams(currentCase, currentSectorIndex = 1, totalSectors = 10) {
+  async simulateTeams(currentCase, currentSectorIndex = 1, totalSectors = 5) {
     return await this.autoFinish(currentCase, currentSectorIndex, totalSectors);
   }
 
   // 6. Calcular resultados de la ronda, Pole Position Boost (+20%) y DRS (+10% en P8-P10)
-  async calculateAndRevealResults(currentCase, currentSectorIndex = 1, totalSectors = 10) {
+  async calculateAndRevealResults(currentCase, currentSectorIndex = 1, totalSectors = 5) {
     this.init();
     if (!this.db) return;
 
@@ -217,7 +217,7 @@ class FirebaseRaceEngine {
     });
     if (maxPossibleScore === 0) maxPossibleScore = 500;
 
-    const sectorWeightPercent = 100 / (Number(totalSectors) || 10);
+    const sectorWeightPercent = 100 / (Number(totalSectors) || 5);
 
     // Procesar los 10 equipos
     const roundResults = TEAMS_LIST.map(team => {
@@ -387,8 +387,17 @@ class FirebaseRaceEngine {
     });
   }
 
+  // 7.1 Selector de Fondo de Pista (Visualización de Pantalla Gigante)
+  async setTrackBackground(backgroundPreset = 'asphalt-dark') {
+    this.init();
+    if (!this.db) return;
+    await update(ref(this.db, 'f1_race/state'), {
+      trackBackground: backgroundPreset
+    });
+  }
+
   // 8. Siguiente Sector
-  async nextSector(nextSectorIndex, totalSectors = 10) {
+  async nextSector(nextSectorIndex, totalSectors = 5) {
     this.init();
     if (!this.db) return;
 
@@ -443,11 +452,11 @@ class FirebaseRaceEngine {
     await set(ref(this.db, 'f1_race/telemetry'), initialTelemetry);
     await set(ref(this.db, 'f1_race/submissions'), {});
     await set(ref(this.db, 'f1_race/history'), {});
-    await set(ref(this.db, 'f1_race/state'), {
+    await update(ref(this.db, 'f1_race/state'), {
       status: 'LOBBY',
       currentCase: null,
       currentSectorIndex: 1,
-      totalSectors: 10,
+      totalSectors: 5,
       startTime: null,
       durationLimitSeconds: 60,
       submissionsCount: 0,
@@ -525,7 +534,7 @@ class FirebaseRaceEngine {
       hardResetTimestamp: Date.now(),
       currentCase: null,
       currentSectorIndex: 1,
-      totalSectors: 10,
+      totalSectors: 5,
       startTime: null,
       durationLimitSeconds: 60,
       submissionsCount: 0,

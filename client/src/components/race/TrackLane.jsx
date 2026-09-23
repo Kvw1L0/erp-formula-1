@@ -16,7 +16,8 @@ export default function TrackLane({
   isRevealed,
   isCarsAdvancing = false,
   isNitroActive,
-  isCloseBattle = false
+  isCloseBattle = false,
+  trackBackground = 'asphalt-dark'
 }) {
   const currentPos = telemetry?.currentPosition || laneNumber;
   const isLeader = currentPos === 1;
@@ -79,20 +80,15 @@ export default function TrackLane({
       </div>
 
       {/* Carril de Pista Central Horizontal (Extendido hasta el final) */}
-      <div className="flex-1 relative h-full min-h-[64px] md:min-h-[80px] flex items-center px-2 overflow-hidden f1-track-bg">
-        {/* Líneas de Sectores S1 a S10 en el fondo */}
-        <div className="absolute inset-0 flex justify-between pointer-events-none opacity-20 text-[9px] font-mono text-slate-400 px-4 items-center">
+      <div className={`flex-1 relative h-full min-h-[64px] md:min-h-[80px] flex items-center px-2 overflow-hidden f1-track-bg track-bg-${trackBackground}`}>
+        {/* Líneas de Sectores S1 a S4 y META en el fondo (5 sectores de 20% cada uno) */}
+        <div className="absolute inset-0 flex justify-between pointer-events-none opacity-25 text-[10px] font-mono text-slate-300 px-4 items-center font-bold">
           <span>0%</span>
-          <span>S1</span>
-          <span>S2</span>
-          <span>S3</span>
-          <span>S4</span>
-          <span>S5</span>
-          <span>S6</span>
-          <span>S7</span>
-          <span>S8</span>
-          <span>S9</span>
-          <span className="text-f1-red font-bold">🏁 META</span>
+          <span>S1 (20%)</span>
+          <span>S2 (40%)</span>
+          <span>S3 (60%)</span>
+          <span>S4 (80%)</span>
+          <span className="text-f1-red font-black">🏁 META (100%)</span>
         </div>
 
         {/* Línea de Meta Cuadriculada en el extremo derecho */}

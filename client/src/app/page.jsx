@@ -139,7 +139,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-f1-border/60 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-mono text-slate-500 relative z-10">
         <div className="flex items-center gap-4">
-          <span>SISTEMA DE TELEMETRÍA VELTIS ERP</span>
+          <span>SISTEMA DE TELEMETRÍA ERP F1</span>
           <span>•</span>
           <span>ESTADO: {gameState?.status || 'LOBBY'}</span>
         </div>

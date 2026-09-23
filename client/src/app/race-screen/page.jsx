@@ -249,7 +249,8 @@ export default function RaceScreenPage() {
   };
 
   const currentSectorIndex = gameState?.currentSectorIndex || 1;
-  const totalSectors = gameState?.totalSectors || 10;
+  const totalSectors = gameState?.totalSectors || 5;
+  const trackBackground = gameState?.trackBackground || 'asphalt-dark';
   const isRevealed = gameState?.status === 'REVEALED' || resultsData !== null;
   const isCaseActive = gameState?.status === 'ACTIVE_CASE';
   const isSafetyCarActive = gameState?.isSafetyCarActive || false;
@@ -451,8 +452,8 @@ export default function RaceScreenPage() {
         </div>
       </header>
 
-      {/* PISTA DE CARRERAS: 10 CARRILES */}
-      <main className="flex-1 my-3 flex flex-col justify-center bg-f1-card/60 rounded-2xl border border-f1-border p-2 md:p-3 overflow-hidden shadow-2xl relative">
+      {/* PISTA DE CARRERAS: 6 CARRILES */}
+      <main className={`flex-1 my-3 flex flex-col justify-center bg-f1-card/60 rounded-2xl border border-f1-border p-2 md:p-3 overflow-hidden shadow-2xl relative track-bg-${trackBackground}`}>
         {TEAMS_LIST.map((team, index) => {
           const laneNum = index + 1;
           const teamsList = Array.isArray(resultsData?.teams) ? resultsData.teams : Object.values(resultsData?.teams || {});
@@ -477,6 +478,7 @@ export default function RaceScreenPage() {
               isCarsAdvancing={isCarsAdvancing}
               isNitroActive={isNitroActive}
               isCloseBattle={isCloseBattle}
+              trackBackground={trackBackground}
             />
           );
         })}

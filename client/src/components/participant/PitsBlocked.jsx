@@ -1,70 +1,63 @@
 'use client';
 
 import React from 'react';
-import { Tv, Radio, CheckCircle2, Trophy, Compass } from 'lucide-react';
+import { Tv, Radio, Clock, Compass, Sparkles } from 'lucide-react';
 
-export default function PitsBlocked({ team, durationFormatted, currentPosition, sectorIndex = 1, totalSectors = 10 }) {
+export default function PitsBlocked({ team, durationFormatted, currentPosition, sectorIndex = 1, totalSectors = 5 }) {
+  const teamColor = team?.color || '#E10600';
+  const teamDisplayName = team?.subname || team?.name || `Escudería ${team?.id}`;
+
   return (
-    <div className="max-w-xl mx-auto w-full bg-f1-card p-8 md:p-10 rounded-3xl border border-f1-cyan/40 shadow-2xl shadow-f1-cyan/10 text-center relative overflow-hidden my-auto">
+    <div className="max-w-xl mx-auto w-full bg-f1-card p-6 md:p-8 rounded-3xl border border-f1-cyan/40 shadow-2xl shadow-f1-cyan/10 text-center relative overflow-hidden my-auto animate-fadeIn">
       {/* Luz de fondo animada */}
-      <div className="absolute -top-20 -right-20 w-48 h-48 bg-f1-cyan/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
-      <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-f1-red/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
+      <div className="absolute -top-24 -right-24 w-56 h-56 bg-f1-cyan/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
+      <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-f1-red/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
-      {/* Radar de Telemetría Animado */}
-      <div className="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-2 border-f1-cyan/30 animate-ping opacity-75" />
-        <div className="absolute inset-2 rounded-full border-2 border-f1-cyan/60 animate-pulse" />
-        <div className="w-16 h-16 bg-f1-dark rounded-full border border-f1-cyan flex items-center justify-center shadow-lg shadow-f1-cyan/30">
-          <Radio className="w-8 h-8 text-f1-cyan animate-pulse" />
+      {/* 1. SECTOR / PREGUNTA */}
+      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-f1-yellow/15 border border-f1-yellow/40 text-xs md:text-sm font-mono text-f1-yellow font-black mb-5 shadow-sm">
+        <Compass className="w-4 h-4 animate-spin-slow" />
+        <span>SECTOR {sectorIndex} DE {totalSectors}</span>
+      </div>
+
+      {/* 2. ESCUDERÍA EN GRANDE */}
+      <div className="mb-6 p-5 rounded-2xl bg-f1-dark/90 border border-f1-border/80 shadow-lg relative">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div
+            className="w-12 h-12 rounded-2xl font-mono text-xl font-black text-white flex items-center justify-center shadow-lg border-2 border-white/60"
+            style={{ backgroundColor: teamColor, boxShadow: `0 0 16px ${teamColor}80` }}
+          >
+            {team?.id || 1}
+          </div>
+          <div className="text-left">
+            <span className="text-xs font-mono text-slate-400 block uppercase tracking-wider">
+              ESCUDERÍA {team?.id}
+            </span>
+            <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight italic truncate max-w-[280px] sm:max-w-xs">
+              {teamDisplayName}
+            </h1>
+          </div>
         </div>
       </div>
 
-      {/* Badge del Equipo y Sector */}
-      <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-f1-dark border border-f1-border text-xs font-mono">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: team?.color || '#E10600' }} />
-          <span className="text-slate-200 font-bold">{team?.name || `Equipo ${team?.id}`}</span>
+      {/* 3. LLAMADO DESTACADO A MIRAR LA PANTALLA GIGANTE */}
+      <div className="p-5 bg-gradient-to-b from-f1-cyan/15 to-transparent rounded-2xl border-2 border-f1-cyan/60 mb-6 space-y-2 shadow-lg shadow-f1-cyan/10">
+        <div className="flex items-center justify-center gap-2.5 text-f1-cyan font-mono text-lg md:text-xl font-black uppercase tracking-wide">
+          <Tv className="w-6 h-6 animate-bounce text-f1-cyan" />
+          <span>¡MIRA LA PANTALLA GIGANTE!</span>
         </div>
-
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-f1-yellow/10 border border-f1-yellow/30 text-xs font-mono text-f1-yellow font-bold">
-          <Compass className="w-3.5 h-3.5" />
-          <span>SECTOR {sectorIndex} DE {totalSectors}</span>
-        </div>
-      </div>
-
-      {/* MENSAJE OBLIGATORIO DE BLOQUEO */}
-      <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase italic mb-3">
-        Procesando telemetría <span className="text-f1-cyan">en Pits...</span>
-      </h2>
-
-      <div className="p-4 bg-f1-dark/90 rounded-2xl border border-f1-cyan/30 mb-6 space-y-2">
-        <div className="flex items-center justify-center gap-2 text-f1-cyan font-mono text-base md:text-lg font-extrabold uppercase">
-          <Tv className="w-5 h-5 animate-bounce" />
-          <span>¡Mira la pantalla central!</span>
-        </div>
-        <p className="text-xs text-slate-400 font-sans">
-          Tu tiempo y respuestas han sido transmitidos al servidor. Los autos están acelerando en la pista del circuito.
+        <p className="text-xs md:text-sm text-slate-300 font-sans leading-relaxed">
+          Tus respuestas fueron transmitidas exitosamente. La carrera se define ahora en la pista.
         </p>
       </div>
 
-      {/* Telemetría registrada */}
-      <div className="grid grid-cols-2 gap-3 text-left font-mono text-xs">
-        <div className="p-3 bg-f1-dark/60 rounded-xl border border-f1-border">
-          <span className="text-slate-500 block text-[10px] uppercase">TIEMPO EN ESTE SECTOR</span>
-          <span className="text-sm font-bold text-f1-green">
-            {durationFormatted || 'En proceso...'}
-          </span>
-        </div>
-        <div className="p-3 bg-f1-dark/60 rounded-xl border border-f1-border">
-          <span className="text-slate-500 block text-[10px] uppercase">ESTADO DE MONOPLAZA</span>
-          <span className="text-sm font-bold text-amber-400 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> BLOQUEADO EN PITS
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-6 pt-4 border-t border-f1-border/60 text-[11px] font-mono text-slate-500">
-        🛡️ TRANSMISIÓN DE TELEMETRÍA ENCRIPTADA • VELTIS RACING
+      {/* 4. TIEMPO REGISTRADO EN GRANDE */}
+      <div className="p-4 bg-f1-dark/80 rounded-2xl border border-f1-border flex flex-col items-center justify-center">
+        <span className="text-slate-400 block text-[11px] font-mono uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5 text-f1-cyan" /> TIEMPO REGISTRADO
+        </span>
+        <span className="text-3xl md:text-4xl font-black font-mono text-f1-cyan tracking-wider drop-shadow-[0_0_12px_#00F0FF80]">
+          {durationFormatted || 'Calculando...'}
+        </span>
       </div>
     </div>
   );

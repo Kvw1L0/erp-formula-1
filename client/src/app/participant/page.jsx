@@ -197,7 +197,7 @@ export default function ParticipantPage() {
 
   const isCaseActive = (gameState?.status === 'ACTIVE_CASE' || gameState?.status === 'ACTIVE') && !!gameState?.currentCase;
   const sectorIndex = gameState?.currentSectorIndex || 1;
-  const totalSectors = gameState?.totalSectors || 10;
+  const totalSectors = gameState?.totalSectors || 5;
   const isRedFlag = !!gameState?.isRedFlagActive;
   const isWetRace = !!gameState?.isWetRaceActive;
 
@@ -365,10 +365,6 @@ export default function ParticipantPage() {
           </div>
         )}
       </main>
-
-      <footer className="max-w-4xl mx-auto w-full text-center text-[11px] font-mono text-slate-500 pt-4 border-t border-f1-border/40">
-        VELTIS RACING ERP • CAPACITACIÓN GAMIFICADA EN TIEMPO REAL
-      </footer>
     </div>
   );
 }

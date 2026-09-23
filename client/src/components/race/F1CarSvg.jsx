@@ -1,10 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function F1CarSvg({ color = '#E10600', number = 1, isBoosted = false }) {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <div className={`relative inline-block select-none ${isBoosted ? 'filter drop-shadow-[0_0_20px_#00F0FF]' : ''}`}>
+      {/* Carga automática de imagen PNG personalizada si existe en /cars/car-X.png */}
+      {!imageError && (
+        <img
+          src={`/cars/car-${number}.png`}
+          alt={`Monoplaza ${number}`}
+          className="w-24 md:w-32 h-auto select-none pointer-events-none drop-shadow-md hidden"
+          onLoad={(e) => {
+            e.currentTarget.classList.remove('hidden');
+            const svgEl = e.currentTarget.nextElementSibling;
+            if (svgEl) svgEl.classList.add('hidden');
+          }}
+          onError={() => setImageError(true)}
+        />
+      )}
       <svg
         viewBox="0 0 160 48"
         className="w-24 md:w-32 h-auto select-none pointer-events-none drop-shadow-md"

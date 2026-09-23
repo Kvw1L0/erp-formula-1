@@ -25,8 +25,8 @@ export function exportTrainingReportCsv({ gameState = {}, telemetry = {}, teamsP
   // ─────────────────────────────────────────────────────────────
   rows.push([escapeCsv('GRAN PREMIO DE LA EFICIENCIA - ERP FORMULA 1')]);
   rows.push([escapeCsv(`FECHA DE EMISIÓN: ${now.toLocaleString('es-CL', { timeZone: 'America/Santiago' })}`)]);
-  rows.push([escapeCsv(`SECTOR FINAL ALCANZADO: Sector ${gameState?.currentSectorIndex || 1} de ${gameState?.totalSectors || 10}`)]);
-  rows.push([escapeCsv(`SISTEMA: NetSuite ERP Gamified Training Platform • Veltis Racing`)]);
+  rows.push([escapeCsv(`SECTOR FINAL ALCANZADO: Sector ${gameState?.currentSectorIndex || 1} de ${gameState?.totalSectors || 5}`)]);
+  rows.push([escapeCsv(`SISTEMA: NetSuite ERP Gamified Training Platform • Gran Premio`)]);
   rows.push([]);
 
   // ─────────────────────────────────────────────────────────────
