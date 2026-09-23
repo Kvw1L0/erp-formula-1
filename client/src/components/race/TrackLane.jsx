@@ -26,9 +26,10 @@ export default function TrackLane({
   const previousDist = telemetry?.previousDistance ?? 0;
   const targetDist = telemetry?.currentDistance ?? 0;
 
-  // Si los autos no han recibido la señal verde de avance, mantener en posición previa
-  const displayPercent = isRevealed
-    ? (isCarsAdvancing ? targetDist : previousDist)
+  // Mientras se muestra la cinemática o el suspenso de 2s, mantener en posición previa.
+  // Una vez iniciada la aceleración o en reposo, mostrar la distancia objetivo alcanzada.
+  const displayPercent = (isRevealed && !isCarsAdvancing)
+    ? previousDist
     : targetDist;
 
   // Mapeo seguro al carril visual sin columna derecha (0% -> 1%, 100% -> 93%)
@@ -37,7 +38,7 @@ export default function TrackLane({
   const teamInventedName = telemetry?.subname || team.subname;
 
   return (
-    <div className={`relative flex items-center h-18 md:h-22 my-1.5 bg-f1-card/90 border-y transition-all overflow-hidden ${
+    <div className={`relative flex items-center h-16 md:h-20 min-h-[64px] md:min-h-[80px] my-1.5 bg-f1-card/90 border-y transition-all overflow-hidden ${
       isCloseBattle
         ? 'border-yellow-400/50 bg-yellow-400/5 shadow-inner'
         : 'border-f1-border/40 hover:bg-f1-cardHover'
@@ -78,7 +79,7 @@ export default function TrackLane({
       </div>
 
       {/* Carril de Pista Central Horizontal (Extendido hasta el final) */}
-      <div className="flex-1 relative h-full flex items-center px-2 overflow-hidden f1-track-bg">
+      <div className="flex-1 relative h-full min-h-[64px] md:min-h-[80px] flex items-center px-2 overflow-hidden f1-track-bg">
         {/* Líneas de Sectores S1 a S10 en el fondo */}
         <div className="absolute inset-0 flex justify-between pointer-events-none opacity-20 text-[9px] font-mono text-slate-400 px-4 items-center">
           <span>0%</span>
@@ -99,7 +100,7 @@ export default function TrackLane({
 
         {/* Monoplaza animado progresivamente con Framer Motion */}
         <motion.div
-          className="absolute z-10 flex items-center"
+          className="absolute top-1/2 -translate-y-1/2 z-10 flex items-center pointer-events-none"
           initial={{ left: `${Math.max(1, (previousDist / 100) * 91)}%` }}
           animate={{
             left: `${visualLeftPercent}%`,

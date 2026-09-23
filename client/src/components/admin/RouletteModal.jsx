@@ -298,7 +298,7 @@ export default function RouletteModal({
             ))}
 
             {/* Eje central */}
-            <div className={`absolute inset-0 m-auto ${isGiantScreen ? 'w-24 h-24 text-base' : 'w-18 h-18 text-xs'} rounded-full bg-slate-950 border-4 border-yellow-400 flex flex-col items-center justify-center text-yellow-400 font-mono font-black shadow-inner z-10`}>
+            <div className={`absolute inset-0 m-auto ${isGiantScreen ? 'w-24 h-24 text-base' : 'w-16 h-16 text-xs'} rounded-full bg-slate-950 border-4 border-yellow-400 flex flex-col items-center justify-center text-yellow-400 font-mono font-black shadow-inner z-10`}>
               <span>F1</span>
               <span className="text-[10px] text-slate-300">PITS</span>
             </div>

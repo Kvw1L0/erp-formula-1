@@ -3,18 +3,20 @@
 import React from 'react';
 
 export default function SkidSparks({ count = 8 }) {
-  const sparks = Array.from({ length: count }, (_, i) => ({
-    id: i,
-    delay: i * 0.08,
-    duration: 0.35 + Math.random() * 0.25,
-    topOffset: (Math.random() - 0.5) * 14,
-    size: 2 + Math.random() * 3,
-    color: i % 2 === 0 ? '#FFE066' : '#FF7A00'
-  }));
+  const sparks = [
+    { id: 0, delay: 0, duration: 0.35, topOffset: -4, size: 3, color: '#FFE066' },
+    { id: 1, delay: 0.08, duration: 0.45, topOffset: 3, size: 3.5, color: '#FF7A00' },
+    { id: 2, delay: 0.16, duration: 0.32, topOffset: -2, size: 2.5, color: '#FFE066' },
+    { id: 3, delay: 0.24, duration: 0.42, topOffset: 4, size: 3.2, color: '#FF7A00' },
+    { id: 4, delay: 0.32, duration: 0.5, topOffset: -5, size: 3.8, color: '#FFE066' },
+    { id: 5, delay: 0.4, duration: 0.36, topOffset: 1, size: 2.8, color: '#FF7A00' },
+    { id: 6, delay: 0.48, duration: 0.44, topOffset: -3, size: 3.2, color: '#FFE066' },
+    { id: 7, delay: 0.56, duration: 0.38, topOffset: 2, size: 3.6, color: '#FF7A00' },
+  ];
 
   return (
-    <div className="absolute left-[-24px] bottom-1 pointer-events-none z-0 overflow-visible">
-      {sparks.map(s => (
+    <div className="absolute left-[-20px] bottom-1 pointer-events-none z-0 overflow-visible">
+      {sparks.slice(0, Math.min(count, sparks.length)).map(s => (
         <span
           key={s.id}
           className="absolute rounded-full filter drop-shadow-[0_0_6px_#FFA500]"
@@ -30,21 +32,6 @@ export default function SkidSparks({ count = 8 }) {
           }}
         />
       ))}
-      <style jsx>{`
-        @keyframes f1-spark {
-          0% {
-            transform: translate(0, 0) scale(1.2);
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.8;
-          }
-          100% {
-            transform: translate(-38px, 6px) scale(0.2);
-            opacity: 0;
-          }
-        }
-      `}</style>
     </div>
   );
 }

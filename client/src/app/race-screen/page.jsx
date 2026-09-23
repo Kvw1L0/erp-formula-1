@@ -50,9 +50,7 @@ export default function RaceScreenPage() {
   const [enableCinematic, setEnableCinematic] = useState(true);
   const [recentOvertakes, setRecentOvertakes] = useState([]);
   const [isSuspenseWait, setIsSuspenseWait] = useState(false);
-  const [isCarsAdvancing, setIsCarsAdvancing] = useState(false);
-
-  const prevCaseIdRef = useRef(null);
+  const [isCarsAdvancing, setIsCarsAdvancing] = useState(true);
 
   useEffect(() => {
     if (socket && isConnected) {
@@ -73,27 +71,26 @@ export default function RaceScreenPage() {
     };
   }, [gameState?.status, isMuted]);
 
-  // Auto-activación de Video 1 (Largada) en Caso 1
-  useEffect(() => {
-    if (gameState?.status === 'ACTIVE' && gameState?.currentCase?.id === 1) {
-      if (prevCaseIdRef.current !== 1) {
-        prevCaseIdRef.current = 1;
-        if (enableCinematic) {
-          setCinematicType('START');
-          setShowCinematic(true);
-        }
-      }
-    }
-  }, [gameState?.status, gameState?.currentCase, enableCinematic]);
-
   // Manejar revelación de resultados con secuencia: Video 2 (Carrera) -> 2s Pausa -> Movimiento Monoplazas (Firebase Cloud)
   const lastProcessedResultsKeyRef = useRef(null);
+  const hasMountedRef = useRef(false);
 
   useEffect(() => {
     if (gameState?.status === 'REVEALED' && gameState?.calculatedResults) {
       const results = normalizeResults(gameState.calculatedResults);
       const resultsKey = results.calculatedAt || results.timestamp || results.roundTimestamp || (results.ranking && results.ranking[0] ? `${results.ranking[0].teamId}_${results.ranking[0].score}` : 'rev');
       
+      // En la primera carga de la pantalla: sincronizar estado existente SIN lanzar video automático ni bloqueo
+      if (!hasMountedRef.current) {
+        hasMountedRef.current = true;
+        lastProcessedResultsKeyRef.current = resultsKey;
+        setResultsData(results);
+        setIsCarsAdvancing(true);
+        setIsNitroActive(false);
+        setShowCinematic(false);
+        return;
+      }
+
       if (lastProcessedResultsKeyRef.current !== resultsKey) {
         lastProcessedResultsKeyRef.current = resultsKey;
         setResultsData(results);
@@ -126,15 +123,18 @@ export default function RaceScreenPage() {
         }
       }
     } else if (gameState?.status === 'LOBBY' || gameState?.status === 'HARD_RESET') {
+      hasMountedRef.current = true;
       lastProcessedResultsKeyRef.current = null;
       setResultsData(null);
-      setIsCarsAdvancing(false);
+      setIsCarsAdvancing(true);
       setIsNitroActive(false);
       setShowCinematic(false);
       setShowPodium(false);
       setShowSolution(false);
       setShowDebrief(false);
       setRecentOvertakes([]);
+    } else {
+      hasMountedRef.current = true;
     }
   }, [gameState?.status, gameState?.calculatedResults, enableCinematic]);
 
@@ -176,7 +176,7 @@ export default function RaceScreenPage() {
 
     socket.on('lobby_reset', () => {
       setResultsData(null);
-      setIsCarsAdvancing(false);
+      setIsCarsAdvancing(true);
       setIsNitroActive(false);
       setShowCinematic(false);
       setShowPodium(false);
